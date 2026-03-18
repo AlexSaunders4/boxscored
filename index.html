@@ -295,7 +295,7 @@ function sSVG(sz,f){
 function sF(r,n){return r>=n?'full':r>=n-.5?'half':'empty';}
 function fR(r){if(r===0)return '';return (r%1===0)?r.toFixed(0):r.toFixed(1);}
 function starsHTML(id,sz,ctx,sp){
-  if(!loggedIn) return '<span style="font-size:10px;color:var(--text3)">sign in</span>';
+  if(!loggedIn) return '<span style="font-size:10px;color:var(--gold);cursor:pointer" onclick="showSignIn()">Sign in to rate</span>';
   var r=ratings[id]||0;
   var s=sp?'event.stopPropagation();':'';
   var h='<span class="hsg">';
@@ -482,14 +482,18 @@ function getGamesForDate(dateStr) {
   return dbGames.filter(function(g) { return g.game_date === dateStr; }).map(dbGameToApp);
 }
 
-// Get unique dates that have games
+// Get unique dates that have games — today + past 7 days only, no future
 function getDatesWithGames() {
+  var today = todayET();
   var seen = {};
   var dates = [];
   dbGames.forEach(function(g) {
-    if (!seen[g.game_date]) { seen[g.game_date] = true; dates.push(g.game_date); }
+    if (!seen[g.game_date] && g.game_date <= today) {
+      seen[g.game_date] = true;
+      dates.push(g.game_date);
+    }
   });
-  return dates.sort();
+  return dates.sort().reverse(); // most recent first
 }
 
 // Format YYYY-MM-DD as display label like "Tue Mar 18"
@@ -609,7 +613,7 @@ function fullHist(id) {
 }
 
 // ── STATE ──
-var loggedIn=false,ratings={},comments={},ratingHistory={};
+var loggedIn=false,ratings={},comments={},ratingHistory={},currentUser=null,authToken=null;
 var activeLeague='ALL',activeDay=todayET(),activeGame=null;
 var prevScreen='games',dEntityId=null,dTab='rate';
 var entityProfileId=null,entityProfileType=null;
@@ -677,7 +681,7 @@ function showGamesScreen(){
   }
   var signInBtn=loggedIn
     ? '<div style="width:30px;height:30px;border-radius:50%;background:var(--goldl);border:1px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--gold);cursor:pointer" onclick="navTo(\'profile\')">ME</div>'
-    : '<button class="hbtn" onclick="doLogin()">Sign in</button>';
+    : '<button class="hbtn" onclick="showSignIn()">Sign in</button>';
 
   var leagueOptions=['ALL','NBA','NFL','NHL','MLB','WNBA','EPL','UCL','MLS'].map(function(l){
     var label=l==='ALL'?'All Leagues':l;
@@ -705,12 +709,15 @@ function setLeague(l){activeLeague=l;renderGamesList();}
 function renderDayNav(){
   var el=document.getElementById('dayNav');
   if(!el) return;
+  var today=todayET();
   var dates=getDatesWithGames();
+  // Always include today even if no final games yet
+  if(dates.indexOf(today)<0) dates.unshift(today);
   if(!dates.length){el.innerHTML='';return;}
-  // make sure activeDay is in the list
-  if(dates.indexOf(activeDay)<0) activeDay=dates[0];
+  // Default to today
+  if(dates.indexOf(activeDay)<0) activeDay=today;
   el.innerHTML=dates.map(function(d){
-    var label=formatDateLabel(d);
+    var label=d===today?'Today':formatDateLabel(d);
     return '<button class="day-pill'+(d===activeDay?' on':'')+'" onclick="setDay(\''+d+'\')">'+label+'</button>';
   }).join('');
 }
@@ -752,7 +759,9 @@ function gameCardHTML(g){
   if (isFinal) {
     footerRight = rated
       ? '<span class="rated-chip">Rated</span>'
-      : '<span style="font-size:10px;color:var(--gold)">'+(loggedIn?'Tap to rate ★':'Tap to view')+'</span>';
+      : (loggedIn
+          ? '<span style="font-size:10px;color:var(--gold)">Tap to rate ★</span>'
+          : '<span style="font-size:10px;color:var(--text3)" onclick="event.stopPropagation();showSignIn()">Sign in to rate</span>');
   } else if (isLive) {
     footerRight = '<span style="font-size:10px;color:var(--red);font-weight:500">In progress</span>';
   } else {
@@ -781,9 +790,19 @@ function gameCardHTML(g){
 function renderGamesList(){
   var el=document.getElementById('gamesList');
   if(!el) return;
+  var today=todayET();
   var allDayGames=getGamesForDate(activeDay);
+  // Only show scheduled games on today — hide them on past dates
+  allDayGames=allDayGames.filter(function(g){
+    if(g.status==='scheduled') return activeDay===today;
+    return true;
+  });
   var games=activeLeague==='ALL'?allDayGames:allDayGames.filter(function(g){return g.league===activeLeague;});
-  if(!games.length){el.innerHTML='<div style="padding:40px 16px;text-align:center;color:var(--text3)">No '+(activeLeague==='ALL'?'':activeLeague+' ')+'games on '+formatDateLabel(activeDay)+'</div>';return;}
+  if(!games.length){
+    var msg=activeDay===today?'No games today yet — check back soon':'No completed games on '+formatDateLabel(activeDay);
+    el.innerHTML='<div style="padding:40px 16px;text-align:center;color:var(--text3);font-size:14px">'+msg+'</div>';
+    return;
+  }
 
   // Group by league when ALL is selected
   var html='';
@@ -819,7 +838,7 @@ function openGame(id){
         '<button class="back" onclick="goToGames()">← Back</button>'+
         '<div style="flex:1;overflow:hidden">'+
           '<div class="det-title">'+awName+' at '+hwName+'</div>'+
-          '<div class="det-sub">'+g.awayScore+' – '+g.homeScore+' · Final · '+g.league+'</div>'+
+          '<div class="det-sub">'+(g.status==='final'?(g.awayScore+' – '+g.homeScore+' · Final'):g.status==='live'?(g.awayScore+' – '+g.homeScore+' · '+g.period):(g.time+' ET'))+' · '+g.league+'</div>'+
         '</div>'+
       '</div>'+
       '<div class="det-tabs" id="detTabs">'+
@@ -891,7 +910,7 @@ function renderTeamsTab(g,d){
         '<div style="margin-top:10px;display:flex;align-items:center;gap:3px">'+starsHTML('team_'+hw,16,'card',true)+'</div>'+
       '</div>'+
     '</div>';
-  if(!loggedIn) html+='<div class="login-wall"><p>Sign in to rate teams, players and more</p><button class="lbtn" onclick="doLogin()">Sign in to rate</button></div>';
+  if(!loggedIn) html+='<div class="login-wall"><p>Sign in to rate teams, players and more</p><button class="lbtn" onclick="showSignIn()">Sign in to rate</button></div>';
   html+='<div class="stat-hdr"><div class="sv l" style="font-size:11px;font-weight:600;color:'+awColor+'">'+aw+'</div><div class="sl"></div><div class="sv r" style="font-size:11px;font-weight:600;color:'+hwColor+'">'+hw+'</div></div>';
   rows.forEach(function(r){
     html+='<div class="stat-row"><div class="sv l '+hi(r[1],r[2],r[3])+'">'+r[1]+'</div><div class="sl">'+r[0]+'</div><div class="sv r '+hi(r[2],r[1],r[3])+'">'+r[2]+'</div></div>';
@@ -932,7 +951,7 @@ function renderPlayersTab(g,d,side){
       '</tr>';
   });
   html+='</tbody></table></div>';
-  if(!loggedIn) html+='<div class="login-wall"><p>Sign in to rate players</p><button class="lbtn" onclick="doLogin()">Sign in to rate</button></div>';
+  if(!loggedIn) html+='<div class="login-wall"><p>Sign in to rate players</p><button class="lbtn" onclick="showSignIn()">Sign in to rate</button></div>';
   else html+='<button class="sbtn" onclick="submitRatings()">Submit ratings</button>';
   return html;
 }
@@ -959,7 +978,7 @@ function renderOtherTab(g,d){
         '<div style="display:flex;align-items:center;gap:5px">'+starsHTML('ref_'+i,19,'card',true)+cmtIcon('ref_'+i)+'</div>'+
       '</div>';
   });
-  if(!loggedIn) html+='<div class="login-wall"><p>Sign in to rate refs and broadcast</p><button class="lbtn" onclick="doLogin()">Sign in to rate</button></div>';
+  if(!loggedIn) html+='<div class="login-wall"><p>Sign in to rate refs and broadcast</p><button class="lbtn" onclick="showSignIn()">Sign in to rate</button></div>';
   else html+='<button class="sbtn" onclick="submitRatings()">Submit ratings</button>';
   return html;
 }
@@ -990,7 +1009,7 @@ function rDrawer(){
 function setDTab(t){dTab=t;rDrawer();}
 function dPaneRate(){
   var id=dEntityId;
-  if(!loggedIn) return '<div style="text-align:center;padding:16px 0"><p style="font-size:13px;color:var(--text3);margin-bottom:14px">Sign in to rate and comment</p><button class="lbtn" onclick="doLogin()">Sign in</button></div>';
+  if(!loggedIn) return '<div style="text-align:center;padding:16px 0"><p style="font-size:13px;color:var(--text3);margin-bottom:14px">Sign in to rate and comment</p><button class="lbtn" onclick="showSignIn()">Sign in</button></div>';
   var myC=comments[id]||'';
   var hist=fullHist(id);
   var html=
@@ -1040,7 +1059,7 @@ function dPaneComm(id){
 }
 function dPaneHist(){
   var id=dEntityId;
-  if(!loggedIn) return '<div style="text-align:center;padding:16px 0"><p style="font-size:13px;color:var(--text3);margin-bottom:14px">Sign in to view history</p><button class="lbtn" onclick="doLogin()">Sign in</button></div>';
+  if(!loggedIn) return '<div style="text-align:center;padding:16px 0"><p style="font-size:13px;color:var(--text3);margin-bottom:14px">Sign in to view history</p><button class="lbtn" onclick="showSignIn()">Sign in</button></div>';
   var hist=fullHist(id);
   if(hist.length<2) return '<p style="font-size:13px;color:var(--text3)">Rate in more games to see your trend.</p>';
   var html=
@@ -1285,10 +1304,10 @@ function renderMPScreen(){
   var overallAvg=allIds.length>0?(allIds.reduce(function(s,id){var h=fullHist(id);return s+(h.length?h.reduce(function(a,b){return a+b.myR;},0)/h.length:0);},0)/allIds.length).toFixed(1):'–';
   var followingCount=FRIENDS.filter(function(f){return f.following;}).length;
 
-  var signInBanner=!loggedIn?'<div class="login-wall"><p>Sign in to save your ratings and connect with friends</p><button class="lbtn" onclick="doLogin()">Sign in</button></div>':'';
+  var signInBanner=!loggedIn?'<div class="login-wall"><p>Sign in to save your ratings and connect with friends</p><button class="lbtn" onclick="showSignIn()">Sign in</button></div>':'';
 
   document.getElementById('scr-profile').innerHTML=
-    '<div class="hdr"><div class="hdr-main"><div class="logo">Box<b>Scored</b></div>'+(loggedIn?'':'<button class="hbtn" onclick="doLogin()">Sign in</button>')+'</div></div>'+
+    '<div class="hdr"><div class="hdr-main"><div class="logo">Box<b>Scored</b></div>'+(loggedIn?'':'<button class="hbtn" onclick="showSignIn()">Sign in</button>')+'</div></div>'+
     '<div class="mp-hero">'+
       '<div class="mp-top">'+
         '<div class="mp-av">'+(loggedIn?'ME':'?')+'</div>'+
@@ -1466,14 +1485,98 @@ function renderMPCompare(){
 }
 
 // ── MISC ──
-function doLogin(){
-  loggedIn=true;
+// ── SIGN IN MODAL ──
+function showSignIn(){
+  var existing=document.getElementById('signInModal');
+  if(existing) existing.remove();
+  var modal=document.createElement('div');
+  modal.id='signInModal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;display:flex;align-items:flex-end;justify-content:center';
+  modal.innerHTML=
+    '<div style="background:var(--bg2);border-radius:18px 18px 0 0;width:100%;max-width:480px;padding:24px 20px 40px;border-top:1px solid var(--border2)">'+
+      '<div style="width:36px;height:4px;background:var(--bg5);border-radius:2px;margin:0 auto 20px"></div>'+
+      '<div style="font-size:20px;font-weight:600;margin-bottom:4px">Join BoxScored</div>'+
+      '<div style="font-size:13px;color:var(--text3);margin-bottom:20px">Sign in to rate games, track your history and connect with friends</div>'+
+      '<div style="margin-bottom:12px">'+
+        '<div style="font-size:12px;color:var(--text3);margin-bottom:6px">Email</div>'+
+        '<input id="siEmail" type="email" placeholder="your@email.com" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:11px 12px;font-size:14px;color:var(--text);outline:none;font-family:Barlow,sans-serif">'+
+      '</div>'+
+      '<div style="margin-bottom:20px">'+
+        '<div style="font-size:12px;color:var(--text3);margin-bottom:6px">Password</div>'+
+        '<input id="siPass" type="password" placeholder="••••••••" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:11px 12px;font-size:14px;color:var(--text);outline:none;font-family:Barlow,sans-serif">'+
+      '</div>'+
+      '<button onclick="doSignIn()" style="width:100%;background:var(--gold);color:#000;border:none;border-radius:8px;padding:12px;font-size:15px;font-weight:600;cursor:pointer;font-family:Barlow,sans-serif;margin-bottom:10px">Sign in</button>'+
+      '<button onclick="doSignUp()" style="width:100%;background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:8px;padding:12px;font-size:15px;font-weight:500;cursor:pointer;font-family:Barlow,sans-serif;margin-bottom:10px">Create account</button>'+
+      '<button onclick="closeSignIn()" style="width:100%;background:transparent;color:var(--text3);border:none;padding:8px;font-size:13px;cursor:pointer;font-family:Barlow,sans-serif">Cancel</button>'+
+      '<div id="siError" style="color:var(--red);font-size:12px;text-align:center;margin-top:8px;min-height:16px"></div>'+
+    '</div>';
+  document.body.appendChild(modal);
+  document.getElementById('siEmail').focus();
+}
+function closeSignIn(){
+  var m=document.getElementById('signInModal');
+  if(m) m.remove();
+}
+function siError(msg){
+  var el=document.getElementById('siError');
+  if(el) el.textContent=msg;
+}
+async function doSignIn(){
+  var email=document.getElementById('siEmail').value.trim();
+  var pass=document.getElementById('siPass').value;
+  if(!email||!pass){siError('Please enter email and password');return;}
+  siError('Signing in…');
+  try {
+    var res=await fetch(SUPABASE_URL+'/auth/v1/token?grant_type=password',{
+      method:'POST',
+      headers:{'apikey':SUPABASE_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({email:email,password:pass})
+    });
+    var data=await res.json();
+    if(data.error||data.error_description){siError(data.error_description||data.error);return;}
+    currentUser=data.user;
+    authToken=data.access_token;
+    loggedIn=true;
+    closeSignIn();
+    onSignedIn();
+  } catch(e){siError('Sign in failed. Try again.');}
+}
+async function doSignUp(){
+  var email=document.getElementById('siEmail').value.trim();
+  var pass=document.getElementById('siPass').value;
+  if(!email||!pass){siError('Please enter email and password');return;}
+  if(pass.length<6){siError('Password must be at least 6 characters');return;}
+  siError('Creating account…');
+  try {
+    var res=await fetch(SUPABASE_URL+'/auth/v1/signup',{
+      method:'POST',
+      headers:{'apikey':SUPABASE_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({email:email,password:pass})
+    });
+    var data=await res.json();
+    if(data.error||data.error_description){siError(data.error_description||data.error);return;}
+    if(data.user&&data.user.id){
+      currentUser=data.user;
+      authToken=data.access_token;
+      loggedIn=true;
+      closeSignIn();
+      onSignedIn();
+    } else {
+      siError('Check your email to confirm your account, then sign in.');
+    }
+  } catch(e){siError('Sign up failed. Try again.');}
+}
+function onSignedIn(){
   var active=document.querySelector('.scr.on');
   var id=active?active.id:'scr-games';
   if(id==='scr-games') showGamesScreen();
   else if(id==='scr-profile') renderMPScreen();
   else if(id==='scr-detail'&&activeGame){var t=document.querySelector('.dtab.on');if(t)t.click();}
-  closeD();
+  if(document.getElementById('dOverlay').classList.contains('on')) rDrawer();
+}
+function doLogin(){
+  // Legacy — now shows real sign in
+  showSignIn();
 }
 function rerender(){
   if(activeGame){var t=document.querySelector('.dtab.on');if(t)t.click();}
