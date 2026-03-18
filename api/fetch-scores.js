@@ -51,8 +51,12 @@ async function espnFetch(url) {
 // ── PARSE STATUS ──
 function parseStatus(event) {
   const s = event.status?.type?.name || '';
-  if (s === 'STATUS_FINAL' || s === 'STATUS_FULL_TIME') return 'final';
-  if (s === 'STATUS_IN_PROGRESS' || s === 'STATUS_HALFTIME') return 'live';
+  const completed = ['STATUS_FINAL','STATUS_FULL_TIME','STATUS_FULL_PEN',
+    'STATUS_POSTPONED','STATUS_CANCELED','STATUS_FORFEIT'];
+  const inProgress = ['STATUS_IN_PROGRESS','STATUS_HALFTIME','STATUS_END_PERIOD',
+    'STATUS_DELAY','STATUS_RAIN_DELAY','STATUS_OVERTIME'];
+  if (completed.includes(s)) return 'final';
+  if (inProgress.includes(s)) return 'live';
   return 'scheduled';
 }
 
@@ -65,10 +69,32 @@ function parseClock(event) {
   return event.status?.displayClock || null;
 }
 
-// ── FETCH SCOREBOARD FOR ONE LEAGUE ──
+// ── DATE HELPERS ──
+function getTodayDate() {
+  return new Date().toISOString().split('T')[0].replace(/-/g, '');
+}
+function getYesterdayDate() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return d.toISOString().split('T')[0].replace(/-/g, '');
+}
+
+// ── FETCH SCOREBOARD FOR ONE LEAGUE (with optional date) ──
+async function fetchScoreboardForDate(leagueConfig, date) {
+  const { espnSport, espnLeague } = leagueConfig;
+  const url = `https://site.api.espn.com/apis/site/v2/sports/${espnSport}/${espnLeague}/scoreboard?dates=${date}`;
+  return fetchScoreboardFromUrl(leagueConfig, url);
+}
+
 async function fetchScoreboard(leagueConfig) {
-  const { league, sport, espnSport, espnLeague } = leagueConfig;
+  const { espnSport, espnLeague } = leagueConfig;
   const url = `https://site.api.espn.com/apis/site/v2/sports/${espnSport}/${espnLeague}/scoreboard`;
+  return fetchScoreboardFromUrl(leagueConfig, url);
+}
+
+// ── FETCH SCOREBOARD FOR ONE LEAGUE ──
+async function fetchScoreboardFromUrl(leagueConfig, url) {
+  const { league, sport, espnSport, espnLeague } = leagueConfig;
   const data = await espnFetch(url);
   const events = data.events || [];
 
@@ -447,20 +473,39 @@ export default async function handler(req, res) {
 
   for (const leagueConfig of toProcess) {
     try {
-      console.log(`Fetching ${leagueConfig.league} scoreboard...`);
-      const { games, events } = await fetchScoreboard(leagueConfig);
+      // Fetch today AND yesterday scoreboard
+      const dates = [getTodayDate(), getYesterdayDate()];
+      let allGames = [];
 
-      if (!games.length) {
+      for (const date of dates) {
+        try {
+          console.log(`Fetching ${leagueConfig.league} scoreboard for ${date}...`);
+          const { games } = await fetchScoreboardForDate(leagueConfig, date);
+          allGames = allGames.concat(games);
+        } catch (e) {
+          console.warn(`Scoreboard fetch failed for ${leagueConfig.league} ${date}: ${e.message}`);
+        }
+      }
+
+      // Deduplicate by espn_id
+      const seen = new Set();
+      allGames = allGames.filter(g => {
+        if (seen.has(g.espn_id)) return false;
+        seen.add(g.espn_id);
+        return true;
+      });
+
+      if (!allGames.length) {
         console.log(`No games found for ${leagueConfig.league}`);
         continue;
       }
 
-      // Upsert all games (insert or update based on espn_id)
-      await supabase('POST', 'games', games, '?on_conflict=espn_id');
-      results.updated.push(`${leagueConfig.league}: ${games.length} games`);
+      // Upsert all games
+      await supabase('POST', 'games', allGames, '?on_conflict=espn_id');
+      results.updated.push(`${leagueConfig.league}: ${allGames.length} games`);
 
-      // Only fetch box scores for live or final games
-      const activeGames = games.filter(g => g.status === 'live' || g.status === 'final');
+      // Fetch box scores for all final/live games
+      const activeGames = allGames.filter(g => g.status === 'live' || g.status === 'final');
       console.log(`${leagueConfig.league}: ${activeGames.length} active games need box scores`);
 
       for (const game of activeGames) {
