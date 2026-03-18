@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BoxScored</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#0a0a0d;--bg2:#13131a;--bg3:#1a1a24;--bg4:#22222e;--bg5:#2a2a38;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);--border3:rgba(255,255,255,0.18);
+  --text:#eeeef4;--text2:#9898b0;--text3:#56566a;--text4:#35354a;
+  --gold:#f5a623;--goldl:rgba(245,166,35,0.15);
+  --blue:#4a9eff;--bluel:rgba(74,158,255,0.15);
+  --green:#2ed573;--red:#ff4757;
+  --r:10px;--rl:14px;--rxl:18px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--bg);overflow-x:hidden}
+body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:480px;margin:0 auto;padding-bottom:70px}
+.scr{display:none}.scr.on{display:block}
+.bnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:rgba(10,10,13,0.96);backdrop-filter:blur(16px);border-top:1px solid var(--border2);display:flex;z-index:300}
+.bni{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 0 14px;cursor:pointer;gap:4px;color:var(--text3);transition:color .15s;border:none;background:none;font-family:'Barlow',sans-serif}
+.bni.on{color:var(--gold)}
+.bni svg{width:22px;height:22px;flex-shrink:0}
+.bni span{font-size:10px;font-weight:500;letter-spacing:.02em}
+.hdr{position:sticky;top:0;z-index:100;background:rgba(10,10,13,0.94);backdrop-filter:blur(14px);border-bottom:1px solid var(--border)}
+.hdr-main{padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:800;letter-spacing:.5px;color:var(--text)}
+.logo b{color:var(--gold)}
+.hbtn{background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:6px 12px;font-size:12px;font-family:'Barlow',sans-serif;color:var(--text2);cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s}
+.hbtn:hover{border-color:var(--gold);color:var(--text)}
+.league-bar{padding:4px 16px 10px;display:flex;align-items:center;gap:8px}
+.league-select{appearance:none;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:7px 32px 7px 12px;font-size:13px;font-family:'Barlow',sans-serif;font-weight:500;color:var(--text);cursor:pointer;flex:1;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%239898b0' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+.league-select:focus{outline:none;border-color:var(--gold)}
+.live-badge{background:rgba(255,71,87,0.2);color:#ff4757;border-radius:6px;padding:4px 8px;font-size:11px;font-weight:600;display:flex;align-items:center;gap:4px;white-space:nowrap}
+.live-dot{width:6px;height:6px;border-radius:50%;background:#ff4757;animation:pulse 1.4s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.day-nav{display:flex;overflow-x:auto;gap:4px;padding:8px 16px 10px;scrollbar-width:none}
+.day-nav::-webkit-scrollbar{display:none}
+.day-pill{flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border2);font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:500;cursor:pointer;background:transparent;color:var(--text2);transition:all .15s}
+.day-pill.on{background:var(--gold);border-color:var(--gold);color:#000;font-weight:700}
+.games-list{padding:0 16px;display:flex;flex-direction:column;gap:8px}
+.game-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:14px 16px;cursor:pointer;transition:border-color .15s,transform .1s}
+.game-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+.gc-row{display:flex;align-items:center;justify-content:space-between}
+.gc-team{display:flex;align-items:center;gap:9px;min-width:115px}
+.gc-team.r{flex-direction:row-reverse}
+.team-logo-wrap{width:32px;height:32px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.team-logo-wrap img{width:32px;height:32px;object-fit:contain}
+.gc-name{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:600}
+.gc-score-block{text-align:center}
+.gc-score{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:700;letter-spacing:-1px}
+.sep{color:var(--text3);font-size:20px;margin:0 3px}
+.gc-status{font-size:10px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.06em}
+.gc-footer{display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:11px;color:var(--text3)}
+.rated-chip{background:var(--goldl);color:var(--gold);border-radius:4px;padding:2px 7px;font-size:10px;font-weight:600}
+.det-hdr{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border)}
+.back{background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:6px 10px;font-size:12px;font-family:'Barlow',sans-serif;color:var(--text2);cursor:pointer;white-space:nowrap;transition:all .15s}
+.back:hover{border-color:var(--gold);color:var(--text)}
+.det-title{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.det-sub{font-size:11px;color:var(--text3);margin-top:1px}
+.det-tabs{display:flex;border-bottom:1px solid var(--border);padding:0 16px;overflow-x:auto;scrollbar-width:none}
+.det-tabs::-webkit-scrollbar{display:none}
+.dtab{padding:10px 14px;font-size:13px;font-family:'Barlow',sans-serif;cursor:pointer;color:var(--text3);border:none;border-bottom:2px solid transparent;background:transparent;margin-bottom:-1px;white-space:nowrap;transition:color .15s}
+.dtab.on{color:var(--gold);border-bottom-color:var(--gold);font-weight:500}
+.tab-body{padding:16px}
+.matchup{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:start;margin-bottom:16px}
+.tc{background:var(--bg3);border-radius:var(--rl);padding:14px;border:1px solid transparent;cursor:pointer;transition:border-color .15s}
+.tc:hover{border-color:var(--border2)}
+.tc-abbr{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700}
+.tc-full{font-size:11px;color:var(--text2);margin-top:2px}
+.score-col{text-align:center;padding-top:12px}
+.big-score{font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:800;letter-spacing:-2px}
+.fin-tag{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-top:2px}
+.stat-hdr{display:flex;padding:6px 0;border-bottom:1px solid var(--border)}
+.stat-row{display:flex;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)}
+.stat-row:last-child{border-bottom:none}
+.sv{flex:1;font-size:13px}.sv.l{text-align:right;padding-right:10px}.sv.r{padding-left:10px}
+.sv.w{font-weight:600;color:var(--text)}.sv.lo{color:var(--text3)}
+.sl{width:120px;text-align:center;font-size:11px;color:var(--text3);flex-shrink:0}
+.coach-row{display:flex;align-items:center;justify-content:space-between;background:var(--bg3);border-radius:var(--r);padding:12px 14px;margin-bottom:12px;cursor:pointer;border:1px solid transparent;transition:border-color .15s}
+.coach-row:hover{border-color:var(--border2)}
+.pt-wrap{overflow-x:auto}
+.ptbl{border-collapse:collapse;width:100%;font-size:12px;min-width:820px}
+.ptbl thead th{padding:7px 10px;text-align:right;font-size:10px;font-weight:600;color:var(--text3);border-bottom:1px solid var(--border);white-space:nowrap;background:var(--bg);font-family:'Barlow Condensed',sans-serif;letter-spacing:.05em}
+.ptbl thead th:first-child{text-align:left;min-width:155px}
+.ptbl thead th.w{min-width:60px}
+.ptbl thead th.rc{text-align:center;min-width:100px}
+.ptbl tbody td{padding:9px 10px;text-align:right;border-bottom:1px solid var(--border);color:var(--text3);white-space:nowrap;vertical-align:middle}
+.ptbl tbody td:first-child{text-align:left;color:var(--text)}
+.ptbl tbody td.rc{text-align:center}
+.ptbl tbody tr{cursor:pointer;transition:background .1s}
+.ptbl tbody tr:hover td{background:var(--bg3)}
+.ptbl tbody tr:last-child td{border-bottom:none}
+.pcell{display:flex;align-items:center;gap:8px}
+.pthumb-fb{width:30px;height:30px;border-radius:50%;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:var(--text3);flex-shrink:0}
+.pname{font-size:12px;font-weight:500;white-space:nowrap}
+.ppos{font-size:10px;color:var(--text3)}
+.td-badge{display:inline-block;font-size:8px;background:rgba(46,213,115,.14);color:#2ed573;padding:1px 4px;border-radius:3px;margin-left:3px;vertical-align:middle}
+.hi{font-weight:600;color:var(--text)!important}
+.neg{color:var(--red)!important}.pos{color:var(--green)!important}
+.rcell{display:flex;align-items:center;justify-content:center;gap:3px}
+.og-lbl{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin:16px 0 8px}
+.other-row{display:flex;align-items:center;justify-content:space-between;padding:12px 4px;border-bottom:1px solid var(--border);cursor:pointer;border-radius:6px;transition:background .1s}
+.other-row:hover{background:var(--bg3)}
+.other-row:last-child{border-bottom:none}
+.or-left{display:flex;align-items:center;gap:10px}
+.or-photo-fb{width:34px;height:34px;border-radius:50%;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--text3);flex-shrink:0}
+.or-name{font-size:13px;font-weight:500}
+.or-sub{font-size:11px;color:var(--text3);margin-top:1px}
+.d-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:400;display:none;align-items:flex-end}
+.d-overlay.on{display:flex}
+.drawer{background:var(--bg2);border-radius:18px 18px 0 0;width:100%;max-height:88vh;overflow-y:auto;border-top:1px solid var(--border2)}
+.d-handle{width:36px;height:4px;background:var(--bg5);border-radius:2px;margin:12px auto 0}
+.d-hdr{padding:14px 16px 12px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.d-name{font-size:16px;font-weight:600}
+.d-sub{font-size:12px;color:var(--text3);margin-top:2px}
+.d-close{background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:5px 11px;font-size:12px;color:var(--text2);cursor:pointer;font-family:'Barlow',sans-serif;flex-shrink:0}
+.d-tabs{display:flex;border-bottom:1px solid var(--border);padding:0 16px}
+.dit{padding:9px 12px;font-size:12px;cursor:pointer;color:var(--text3);border:none;border-bottom:2px solid transparent;background:transparent;margin-bottom:-1px;font-family:'Barlow',sans-serif;transition:color .15s}
+.dit.on{color:var(--gold);border-bottom-color:var(--gold);font-weight:500}
+.d-pane{padding:14px 16px;display:none}
+.d-pane.on{display:block}
+.dr-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.dr-lbl{font-size:13px;font-weight:500}
+.dr-txt{width:100%;padding:9px 11px;font-size:13px;font-family:'Barlow',sans-serif;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text);resize:none;line-height:1.5;margin-bottom:14px}
+.dr-txt:focus{outline:none;border-color:var(--gold)}
+.dlbl{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.09em;margin-bottom:8px;font-family:'Barlow Condensed',sans-serif}
+.d-avg{font-size:24px;font-weight:700;font-family:'Barlow Condensed',sans-serif;margin-bottom:2px}
+.d-cnt{font-size:11px;color:var(--text3);margin-bottom:10px}
+.dbar-row{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.dbl{font-size:11px;color:var(--text3);width:22px;text-align:right;flex-shrink:0}
+.dbt{flex:1;height:6px;background:var(--bg4);border-radius:3px;overflow:hidden}
+.dbf{height:100%;background:var(--gold);border-radius:3px}
+.dbc{font-size:11px;color:var(--text3);width:22px}
+.comm-item{padding:10px 0;border-bottom:1px solid var(--border)}
+.comm-item:last-child{border-bottom:none}
+.comm-top{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.comm-av{width:26px;height:26px;border-radius:50%;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:var(--text2);flex-shrink:0}
+.comm-user{font-size:12px;font-weight:500}
+.comm-txt{font-size:12px;color:var(--text2);line-height:1.5;margin-left:34px}
+.cta-link{font-size:11px;color:var(--blue);cursor:pointer;background:none;border:none;font-family:'Barlow',sans-serif;padding:0;text-decoration:underline;text-underline-offset:2px;margin-top:8px;display:block}
+.hsg{display:inline-flex;align-items:center;user-select:none}
+.hsw{position:relative;display:inline-block;cursor:pointer}
+.sv-lbl{font-size:11px;color:var(--text3);margin-left:4px;min-width:20px}
+.login-wall{text-align:center;padding:24px 16px;background:var(--bg3);border-radius:var(--rl);border:1px solid var(--border);margin:16px 0}
+.login-wall p{font-size:13px;color:var(--text2);margin-bottom:14px}
+.lbtn{background:var(--gold);color:#000;border:none;border-radius:8px;padding:9px 24px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Barlow',sans-serif}
+.sbtn{width:100%;background:var(--gold);color:#000;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Barlow',sans-serif;margin-top:16px}
+.sbtn:disabled{opacity:.4;cursor:default}
+.sec-lbl{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin:16px 0 8px}
+.chart-legend{display:flex;align-items:center;gap:14px;margin-bottom:8px}
+.ldot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:middle}
+.cmt-icon{background:none;border:none;cursor:pointer;padding:2px 4px;color:var(--text3);border-radius:4px;transition:color .15s;display:inline-flex;align-items:center}
+.cmt-icon:hover{color:var(--text)}.cmt-icon.hc{color:var(--blue)}
+.search-bar-wrap{padding:12px 16px}
+.search-input-row{display:flex;align-items:center;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:0 12px;gap:8px}
+.search-input-row:focus-within{border-color:var(--gold)}
+.sinput{flex:1;background:transparent;border:none;padding:11px 0;font-size:14px;font-family:'Barlow',sans-serif;color:var(--text);outline:none}
+.sinput::placeholder{color:var(--text3)}
+.search-filters{display:flex;gap:6px;padding:0 16px 12px;overflow-x:auto;scrollbar-width:none}
+.search-filters::-webkit-scrollbar{display:none}
+.sf{flex-shrink:0;padding:5px 14px;border-radius:20px;border:1px solid var(--border2);font-size:12px;cursor:pointer;background:transparent;color:var(--text2);font-family:'Barlow',sans-serif;transition:all .15s}
+.sf.on{background:var(--gold);border-color:var(--gold);color:#000;font-weight:600}
+.search-result{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s}
+.search-result:hover{background:var(--bg3)}
+.sr-name{font-size:14px;font-weight:500}
+.sr-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.sr-arrow{color:var(--text3);margin-left:auto;flex-shrink:0}
+.search-section-hdr{padding:10px 16px 4px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.1em;text-transform:uppercase}
+.ep-hero{padding:20px 16px 16px;border-bottom:1px solid var(--border)}
+.ep-top{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.ep-name{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;letter-spacing:.3px}
+.ep-meta{font-size:12px;color:var(--text3);margin-top:3px}
+.ep-stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ep-stat{background:var(--bg3);border-radius:var(--r);padding:10px 12px;text-align:center;border:1px solid var(--border)}
+.ep-stat-val{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--gold)}
+.ep-stat-lbl{font-size:10px;color:var(--text3);margin-top:2px}
+.ep-tabs{display:flex;border-bottom:1px solid var(--border);padding:0 16px;overflow-x:auto;scrollbar-width:none}
+.ep-tabs::-webkit-scrollbar{display:none}
+.eptab{padding:10px 14px;font-size:13px;cursor:pointer;color:var(--text3);border:none;border-bottom:2px solid transparent;background:transparent;margin-bottom:-1px;white-space:nowrap;font-family:'Barlow',sans-serif;transition:color .15s}
+.eptab.on{color:var(--gold);border-bottom-color:var(--gold);font-weight:500}
+.ep-body{padding:16px}
+.game-hist-row{display:flex;align-items:flex-start;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);gap:8px}
+.game-hist-row:last-child{border-bottom:none}
+.ghr-matchup{font-size:13px;font-weight:500}
+.ghr-date{font-size:11px;color:var(--text3);margin-top:2px}
+.ghr-comment{font-size:11px;color:var(--text3);font-style:italic;margin-top:3px}
+.ghr-my{font-size:14px;font-weight:600;color:var(--gold)}
+.ghr-comm{font-size:10px;color:var(--text3);margin-top:2px}
+.chart-box{position:relative;height:140px;width:100%;margin-bottom:14px}
+.mp-hero{padding:20px 16px 16px;border-bottom:1px solid var(--border)}
+.mp-top{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.mp-av{width:58px;height:58px;border-radius:50%;background:var(--bg3);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--gold);flex-shrink:0}
+.mp-name{font-size:20px;font-weight:600}
+.mp-handle{font-size:12px;color:var(--text3);margin-top:2px}
+.mp-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.mp-stat{background:var(--bg3);border-radius:var(--r);padding:10px 8px;text-align:center;border:1px solid var(--border)}
+.mp-stat-val{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--gold)}
+.mp-stat-lbl{font-size:9px;color:var(--text3);margin-top:2px}
+.mp-tabs{display:flex;border-bottom:1px solid var(--border);padding:0 16px;overflow-x:auto;scrollbar-width:none}
+.mp-tabs::-webkit-scrollbar{display:none}
+.mptab{padding:10px 12px;font-size:12px;cursor:pointer;color:var(--text3);border:none;border-bottom:2px solid transparent;background:transparent;margin-bottom:-1px;white-space:nowrap;font-family:'Barlow',sans-serif;transition:color .15s}
+.mptab.on{color:var(--gold);border-bottom-color:var(--gold);font-weight:500}
+.mp-body{padding:16px}
+.filter-row{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-bottom:12px}
+.filter-row::-webkit-scrollbar{display:none}
+.fpill{flex-shrink:0;padding:5px 14px;border-radius:20px;border:1px solid var(--border2);font-size:12px;cursor:pointer;background:transparent;color:var(--text2);font-family:'Barlow',sans-serif;transition:all .15s}
+.fpill.on{background:var(--gold);border-color:var(--gold);color:#000;font-weight:600}
+.hist-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:14px 16px;margin-bottom:10px}
+.hc-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px}
+.hc-name{font-size:14px;font-weight:600}
+.hc-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.hc-avg{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--gold);text-align:right}
+.hc-cnt{font-size:10px;color:var(--text3);text-align:right;margin-top:2px}
+.mlog-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border);font-size:11px}
+.mlog-row:last-child{border-bottom:none}
+.fav-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s}
+.fav-row:last-child{border-bottom:none}
+.fav-row:hover{background:var(--bg3);border-radius:6px;padding:10px 6px;margin:0 -6px}
+.fav-name{font-size:13px;font-weight:500;flex:1}
+.fav-sub{font-size:11px;color:var(--text3)}
+.fav-rating{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--gold)}
+.friend-row{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)}
+.friend-row:last-child{border-bottom:none}
+.friend-av{width:38px;height:38px;border-radius:50%;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--text2);flex-shrink:0}
+.friend-name{font-size:13px;font-weight:500}
+.friend-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.friend-btn{margin-left:auto;background:var(--bg4);border:1px solid var(--border2);border-radius:6px;padding:4px 10px;font-size:11px;color:var(--text2);cursor:pointer;font-family:'Barlow',sans-serif;white-space:nowrap;transition:all .15s}
+.friend-btn:hover{border-color:var(--gold);color:var(--gold)}
+.activity-item{padding:12px 0;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px}
+.activity-item:last-child{border-bottom:none}
+.act-av{width:32px;height:32px;border-radius:50%;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--text2);flex-shrink:0}
+.act-text{font-size:12px;color:var(--text2);line-height:1.5}
+.act-text strong{color:var(--text);font-weight:500}
+.act-time{font-size:10px;color:var(--text3);margin-top:3px}
+.compare-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.compare-row:last-child{border-bottom:none}
+.cmp-entity{font-size:13px;font-weight:500}
+.cmp-sub{font-size:11px;color:var(--text3)}
+.cmp-ratings{display:flex;gap:12px;flex-shrink:0}
+.cmp-mine{font-size:13px;font-weight:600;color:var(--blue)}
+.cmp-theirs{font-size:13px;font-weight:600;color:var(--gold)}
+.cmp-legend{display:flex;gap:16px;margin-bottom:8px}
+.cmp-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px}
+</style>
+</head>
+<body>
+
+<div id="scr-games" class="scr on"></div>
+<div id="scr-detail" class="scr"></div>
+<div id="scr-search" class="scr"></div>
+<div id="scr-entity" class="scr"></div>
+<div id="scr-profile" class="scr"></div>
+
+<nav class="bnav">
+  <button class="bni on" id="bn-games" onclick="navTo('games')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 21V9"/></svg>
+    <span>Games</span>
+  </button>
+  <button class="bni" id="bn-search" onclick="navTo('search')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+    <span>Search</span>
+  </button>
+  <button class="bni" id="bn-profile" onclick="navTo('profile')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+    <span>My Profile</span>
+  </button>
+</nav>
+
+<div class="d-overlay" id="dOverlay" onclick="maybeClose(event)">
+  <div class="drawer">
+    <div class="d-handle"></div>
+    <div class="d-hdr">
+      <div><div class="d-name" id="dName"></div><div class="d-sub" id="dSub"></div></div>
+      <button class="d-close" onclick="closeD()">Close</button>
+    </div>
+    <div class="d-tabs" id="dTabs"></div>
+    <div id="dContent"></div>
+  </div>
+</div>
+
+<script>
+// ── STARS ──
+var SC='#f5a623', SE='rgba(255,255,255,0.13)';
+function sSVG(sz,f){
+  var id='x'+Math.random().toString(36).slice(2,5);
+  var p='10,2 12.9,7.6 19,8.5 14.5,12.9 15.6,19 10,16 4.4,19 5.5,12.9 1,8.5 7.1,7.6';
+  if(f==='full') return '<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 20 20"><polygon points="'+p+'" fill="'+SC+'" stroke="'+SC+'" stroke-width="1"/></svg>';
+  if(f==='half') return '<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 20 20"><defs><clipPath id="h'+id+'"><rect x="0" y="0" width="10" height="20"/></clipPath></defs><polygon points="'+p+'" fill="'+SE+'" stroke="'+SE+'" stroke-width="1"/><polygon points="'+p+'" fill="'+SC+'" stroke="'+SC+'" stroke-width="1" clip-path="url(#h'+id+')"/></svg>';
+  return '<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 20 20"><polygon points="'+p+'" fill="'+SE+'" stroke="'+SE+'" stroke-width="1"/></svg>';
+}
+function sF(r,n){return r>=n?'full':r>=n-.5?'half':'empty';}
+function fR(r){if(r===0)return '';return (r%1===0)?r.toFixed(0):r.toFixed(1);}
+function starsHTML(id,sz,ctx,sp){
+  if(!loggedIn) return '<span style="font-size:10px;color:var(--text3)">sign in</span>';
+  var r=ratings[id]||0;
+  var s=sp?'event.stopPropagation();':'';
+  var h='<span class="hsg">';
+  for(var n=1;n<=5;n++){
+    h+='<span class="hsw" style="width:'+sz+'px;height:'+sz+'px;overflow:hidden">';
+    h+='<span style="position:absolute;left:0;top:0;width:50%;height:100%;z-index:2" onclick="'+s+'rH(\''+id+'\',\''+(n-.5)+'\',\''+ctx+'\')"></span>';
+    h+='<span style="position:absolute;right:0;top:0;width:50%;height:100%;z-index:2" onclick="'+s+'rH(\''+id+'\',\''+n+'\',\''+ctx+'\')"></span>';
+    h+='<span style="pointer-events:none">'+sSVG(sz,sF(r,n))+'</span></span>';
+  }
+  h+='</span>';
+  if(r>0) h+='<span class="sv-lbl">'+fR(r)+'</span>';
+  return h;
+}
+function rH(id,val,ctx){
+  val=parseFloat(val);
+  var prev=ratings[id]||0;
+  ratings[id]=(prev===val)?Math.max(0,val-.5):val;
+  recRating(id,ratings[id]);
+  if(ctx==='drawer'){rDrawer();}
+  else{rerender();if(dEntityId===id&&document.getElementById('dOverlay').classList.contains('on'))rDrawer();}
+}
+
+// ── TEAM LOGOS ──
+var NBA_TEAMS={
+  LAL:1610612747,BOS:1610612738,GSW:1610612744,DEN:1610612743,MIL:1610612749,
+  PHX:1610612756,MIA:1610612748,OKC:1610612760,DAL:1610612742,NYK:1610612752,
+  CLE:1610612739,MIN:1610612750,IND:1610612754,ATL:1610612737,SAC:1610612758,
+  SAS:1610612759,MEM:1610612763,POR:1610612757,CHI:1610612741,HOU:1610612745,
+  BKN:1610612751,TOR:1610612761,ORL:1610612753,WAS:1610612764,NOP:1610612740,
+  LAC:1610612746,UTA:1610612762,DET:1610612765,CHA:1610612766,PHI:1610612755
+};
+var TEAM_COLORS={
+  LAL:'#552583',BOS:'#007A33',GSW:'#1D428A',DEN:'#0E2240',MIL:'#00471B',
+  PHX:'#1D1160',MIA:'#98002E',OKC:'#007AC1',DAL:'#00538C',NYK:'#006BB6',
+  CLE:'#860038',MIN:'#0C2340',IND:'#002D62',ATL:'#E03A3E',SAC:'#5A2D81',
+  SAS:'#8A8D8F',MEM:'#5D76A9',POR:'#E03A3E',CHI:'#CE1141',HOU:'#CE1141',
+  BKN:'#333333',TOR:'#CE1141',ORL:'#0077C0',WAS:'#002B5C',NOP:'#0C2340',
+  LAC:'#C8102E',UTA:'#002B5C',DET:'#C8102E',CHA:'#00788C',PHI:'#006BB6',
+  KC:'#E31837',SF:'#AA0000',BUF:'#00338D',PHI_NFL:'#004C54',DAL_NFL:'#003594',
+  GB:'#203731',DET_NFL:'#0076B6',LAR:'#003594',
+  EDM:'#FF4C00',TBL:'#002868',BOS_NHL:'#000000',COL:'#6F263D',NYR:'#0038A8',VGK:'#B4975A',
+  NYY:'#003087',LAD:'#005A9C',HOU_MLB:'#002D62',ATL_MLB:'#CE1141',NYM:'#002D72',
+  MCI:'#6CABDD',ARS:'#EF0107',LIV:'#C8102E',CHE:'#034694',MUN:'#DA291C',TOT:'#132257'
+};
+var TEAM_NAMES={
+  LAL:'Los Angeles Lakers',BOS:'Boston Celtics',GSW:'Golden State Warriors',DEN:'Denver Nuggets',
+  MIL:'Milwaukee Bucks',PHX:'Phoenix Suns',MIA:'Miami Heat',OKC:'Oklahoma City Thunder',
+  DAL:'Dallas Mavericks',NYK:'New York Knicks',CLE:'Cleveland Cavaliers',MIN:'Minnesota Timberwolves',
+  IND:'Indiana Pacers',ATL:'Atlanta Hawks',SAC:'Sacramento Kings',SAS:'San Antonio Spurs',
+  MEM:'Memphis Grizzlies',POR:'Portland Trail Blazers',CHI:'Chicago Bulls',HOU:'Houston Rockets',
+  BKN:'Brooklyn Nets',TOR:'Toronto Raptors',ORL:'Orlando Magic',WAS:'Washington Wizards',
+  NOP:'New Orleans Pelicans',LAC:'LA Clippers',UTA:'Utah Jazz',DET:'Detroit Pistons',
+  CHA:'Charlotte Hornets',PHI:'Philadelphia 76ers',
+  KC:'Kansas City Chiefs',SF:'San Francisco 49ers',BUF:'Buffalo Bills',PHI_NFL:'Philadelphia Eagles',
+  DAL_NFL:'Dallas Cowboys',GB:'Green Bay Packers',DET_NFL:'Detroit Lions',LAR:'LA Rams',
+  EDM:'Edmonton Oilers',TBL:'Tampa Bay Lightning',BOS_NHL:'Boston Bruins',COL:'Colorado Avalanche',NYR:'New York Rangers',VGK:'Vegas Golden Knights',
+  NYY:'New York Yankees',LAD:'Los Angeles Dodgers',HOU_MLB:'Houston Astros',ATL_MLB:'Atlanta Braves',NYM:'New York Mets',
+  MCI:'Manchester City',ARS:'Arsenal',LIV:'Liverpool',CHE:'Chelsea',MUN:'Manchester United',TOT:'Tottenham'
+};
+function teamLogoHTML(abbr,sz){
+  var nbaId=NBA_TEAMS[abbr];
+  var color=TEAM_COLORS[abbr]||'#555';
+  var label=abbr.replace('_NFL','').replace('_NHL','').replace('_MLB','');
+  if(nbaId){
+    return '<img src="https://cdn.nba.com/logos/nba/'+nbaId+'/primary/L/logo.svg" width="'+sz+'" height="'+sz+'" style="object-fit:contain" onerror="this.outerHTML=\'<div style=\\\"width:'+sz+'px;height:'+sz+'px;border-radius:50%;background:'+color+';display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed,sans-serif;font-size:'+Math.floor(sz*.28)+'px;font-weight:700;color:#fff\\\">'+(label)+'</div>\' alt="">';
+  }
+  return '<div style="width:'+sz+'px;height:'+sz+'px;border-radius:6px;background:'+color+';display:flex;align-items:center;justify-content:center;font-family:\'Barlow Condensed\',sans-serif;font-size:'+Math.floor(sz*.28)+'px;font-weight:700;color:#fff">'+label+'</div>';
+}
+function playerImgHTML(name,sz){
+  var ids={'Austin Reaves':1630559,'Luka Doncic':1629029,'Marcus Smart':203935,'Deandre Ayton':1629028,'Rui Hachimura':1629060,'Jaxson Hayes':1629637,'Luke Kennard':1628384,'Aaron Gordon':203932,'Nikola Jokic':203999,'Tim Hardaway Jr.':203501,'Cameron Johnson':1629661,'Christian Braun':1631096,'Bruce Brown':1628971,'Jamal Murray':1627750,'Spencer Jones':1641785,'Jayson Tatum':1628369,'Jaylen Brown':1627759,'Jrue Holiday':203200,'Al Horford':201143,'Kristaps Porzingis':204001,'Payton Pritchard':1630202,'Trae Young':1629029,'Giannis Antetokounmpo':203507,'Damian Lillard':203081,'Shai Gilgeous-Alexander':1628983,'Ja Morant':1629630,'Tyrese Haliburton':1630169,'Pascal Siakam':1626169};
+  var pid=ids[name];
+  var initials=name.split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase();
+  if(pid){
+    return '<img src="https://cdn.nba.com/headshots/nba/latest/260x190/'+pid+'.png" width="'+sz+'" height="'+sz+'" style="border-radius:50%;object-fit:cover;object-position:top center;background:var(--bg4)" onerror="this.outerHTML=\'<div style=\\\"width:'+sz+'px;height:'+sz+'px;border-radius:50%;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:'+Math.floor(sz*.32)+'px;font-weight:600;color:var(--text3)\\\">'+initials+'</div>\' alt="">';
+  }
+  return '<div style="width:'+sz+'px;height:'+sz+'px;border-radius:50%;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:'+Math.floor(sz*.32)+'px;font-weight:600;color:var(--text3)">'+initials+'</div>';
+}
+
+// ── GAME DATA ──
+function mkP(defs){return defs.map(function(d){return {name:d[0],pos:d[1],min:d[2],pts:d[3],fg:d[4],tp:d[5],ft:d[6],reb:d[7],ast:d[8],to:d[9],stl:d[10],blk:d[11],oreb:d[12],dreb:d[13],pf:d[14],pm:d[15],td:d[16]||false};});}
+
+var WEEK=[
+  {day:'Mon Mar 10',games:[
+    {id:'m10g1',league:'NBA',away:'PHX',home:'GSW',awayScore:108,homeScore:114,time:'7:00 PM'},
+    {id:'m10g2',league:'NBA',away:'MEM',home:'OKC',awayScore:99,homeScore:121,time:'8:00 PM'},
+    {id:'m10g3',league:'NBA',away:'UTA',home:'LAL',awayScore:103,homeScore:117,time:'10:30 PM'},
+    {id:'m10g4',league:'NFL',away:'KC',home:'BUF',awayScore:27,homeScore:24,time:'8:20 PM'},
+    {id:'m10g5',league:'NHL',away:'EDM',home:'TBL',awayScore:4,homeScore:2,time:'7:00 PM'},
+    {id:'m10g6',league:'EPL',away:'ARS',home:'MCI',awayScore:1,homeScore:2,time:'12:30 PM'}
+  ]},
+  {day:'Tue Mar 11',games:[
+    {id:'t11g1',league:'NBA',away:'DET',home:'MIL',awayScore:111,homeScore:128,time:'7:00 PM'},
+    {id:'t11g2',league:'NBA',away:'ATL',home:'BOS',awayScore:104,homeScore:119,time:'7:30 PM'},
+    {id:'t11g3',league:'NBA',away:'MIN',home:'DAL',awayScore:112,homeScore:109,time:'8:30 PM'},
+    {id:'t11g4',league:'NBA',away:'NYK',home:'LAC',awayScore:118,homeScore:110,time:'10:00 PM'},
+    {id:'t11g5',league:'MLB',away:'NYY',home:'LAD',awayScore:3,homeScore:5,time:'7:10 PM'},
+    {id:'t11g6',league:'EPL',away:'LIV',home:'CHE',awayScore:2,homeScore:1,time:'3:00 PM'}
+  ]},
+  {day:'Wed Mar 12',games:[
+    {id:'w12g1',league:'NBA',away:'CLE',home:'MIA',awayScore:109,homeScore:104,time:'7:30 PM'},
+    {id:'w12g2',league:'NBA',away:'IND',home:'CHI',awayScore:124,homeScore:118,time:'8:00 PM'},
+    {id:'w12g3',league:'NBA',away:'SAS',home:'DEN',awayScore:101,homeScore:115,time:'9:00 PM'},
+    {id:'w12g4',league:'NHL',away:'COL',home:'NYR',awayScore:3,homeScore:2,time:'7:00 PM'},
+    {id:'w12g5',league:'NFL',away:'SF',home:'LAR',awayScore:20,homeScore:17,time:'8:20 PM'}
+  ]},
+  {day:'Thu Mar 13',games:[
+    {id:'h13g1',league:'NBA',away:'POR',home:'PHI',awayScore:96,homeScore:108,time:'7:00 PM'},
+    {id:'h13g2',league:'NBA',away:'BKN',home:'TOR',awayScore:97,homeScore:112,time:'7:30 PM'},
+    {id:'h13g3',league:'NBA',away:'NOP',home:'HOU',awayScore:110,homeScore:106,time:'8:00 PM'},
+    {id:'h13g4',league:'NBA',away:'SAC',home:'GSW',awayScore:107,homeScore:113,time:'10:00 PM'},
+    {id:'h13g5',league:'MLB',away:'ATL_MLB',home:'NYM',awayScore:4,homeScore:6,time:'7:10 PM'},
+    {id:'h13g6',league:'EPL',away:'MUN',home:'TOT',awayScore:0,homeScore:2,time:'12:30 PM'}
+  ]},
+  {day:'Fri Mar 14',games:[
+    {id:'f14g1',league:'NBA',away:'SAS',home:'CHA',awayScore:102,homeScore:115,time:'3:30 PM'},
+    {id:'f14g2',league:'NBA',away:'WAS',home:'BOS',awayScore:100,homeScore:111,time:'6:00 PM'},
+    {id:'f14g3',league:'NBA',away:'ORL',home:'MIA',awayScore:121,homeScore:117,time:'8:00 PM'},
+    {id:'f14g4',league:'NBA',away:'DEN',home:'LAL',awayScore:125,homeScore:127,time:'8:30 PM'},
+    {id:'f14g5',league:'NBA',away:'SAC',home:'LAC',awayScore:118,homeScore:109,time:'10:30 PM'},
+    {id:'f14g6',league:'NHL',away:'BOS_NHL',home:'VGK',awayScore:2,homeScore:4,time:'10:00 PM'},
+    {id:'f14g7',league:'NFL',away:'GB',home:'DET_NFL',awayScore:17,homeScore:24,time:'8:15 PM'}
+  ]},
+  {day:'Sat Mar 15',games:[
+    {id:'s15g1',league:'NBA',away:'OKC',home:'MIN',awayScore:116,homeScore:103,time:'1:00 PM'},
+    {id:'s15g2',league:'NBA',away:'DET',home:'TOR',awayScore:108,homeScore:119,time:'3:30 PM'},
+    {id:'s15g3',league:'NBA',away:'IND',home:'MIL',awayScore:123,homeScore:134,time:'3:30 PM'},
+    {id:'s15g4',league:'NBA',away:'DAL',home:'CLE',awayScore:130,homeScore:120,time:'3:30 PM'},
+    {id:'s15g5',league:'NBA',away:'GSW',home:'NYK',awayScore:107,homeScore:110,time:'8:00 PM'},
+    {id:'s15g6',league:'NBA',away:'UTA',home:'SAC',awayScore:111,homeScore:116,time:'10:00 PM'},
+    {id:'s15g7',league:'NFL',away:'PHI_NFL',home:'DAL_NFL',awayScore:28,homeScore:21,time:'4:25 PM'},
+    {id:'s15g8',league:'EPL',away:'TOT',home:'LIV',awayScore:1,homeScore:3,time:'7:45 PM'},
+    {id:'s15g9',league:'MLB',away:'HOU_MLB',home:'NYY',awayScore:2,homeScore:7,time:'1:05 PM'}
+  ]},
+  {day:'Sun Mar 16',games:[
+    {id:'u16g1',league:'NBA',away:'ORL',home:'ATL',awayScore:112,homeScore:124,time:'7:00 PM'},
+    {id:'u16g2',league:'NBA',away:'PHX',home:'BOS',awayScore:112,homeScore:120,time:'7:30 PM'},
+    {id:'u16g3',league:'NBA',away:'DAL',home:'NOP',awayScore:111,homeScore:129,time:'8:00 PM'},
+    {id:'u16g4',league:'NBA',away:'MEM',home:'CHI',awayScore:107,homeScore:132,time:'8:00 PM'},
+    {id:'u16g5',league:'NBA',away:'LAL',home:'HOU',awayScore:100,homeScore:92,time:'9:30 PM'},
+    {id:'u16g6',league:'NHL',away:'TBL',home:'EDM',awayScore:1,homeScore:3,time:'9:00 PM'},
+    {id:'u16g7',league:'EPL',away:'CHE',home:'ARS',awayScore:0,homeScore:1,time:'4:30 PM'},
+    {id:'u16g8',league:'MLB',away:'LAD',home:'ATL_MLB',awayScore:5,homeScore:3,time:'4:05 PM'}
+  ]}
+];
+
+var GAME_DETAILS={
+  'f14g4':{
+    teamStats:{DEN:{pts:125,fgPct:'46.3%',tpPct:'38.8%',ftPct:'81.8%',reb:41,ast:33,stl:13,blk:5,to:16,pip:44,fastBreak:25,bench:39,lead:8},LAL:{pts:127,fgPct:'51.6%',tpPct:'33.3%',ftPct:'65.4%',reb:46,ast:31,stl:10,blk:6,to:17,pip:56,fastBreak:15,bench:18,lead:17}},
+    homeCoach:'JJ Redick',awayCoach:'David Adelman',
+    homePlayers:mkP([['Austin Reaves','G',36,32,'12-21','3-8','5-6',7,6,3,1,1,1,6,3,7],['Luka Doncic','G',38,30,'10-26','4-14','6-9',11,13,6,1,3,0,11,3,-4,true],['Marcus Smart','F',34,21,'8-15','5-12','0-0',3,2,0,5,1,1,2,2,16],['Deandre Ayton','C',28,9,'4-6','0-0','1-4',9,2,2,0,1,4,5,3,1],['Rui Hachimura','F',22,6,'3-6','0-3','0-0',4,0,0,0,0,1,3,2,-8],['Jaxson Hayes','C',18,5,'1-2','0-0','3-4',4,0,0,1,0,0,4,4,-2],['Luke Kennard','G',14,3,'1-2','1-2','0-0',1,2,0,0,0,0,1,0,-9]]),
+    awayPlayers:mkP([['Aaron Gordon','F',36,27,'9-16','5-10','4-7',5,2,3,0,2,2,3,1,-3],['Nikola Jokic','C',38,24,'10-19','2-6','2-2',16,14,4,5,1,2,14,2,6,true],['Tim Hardaway Jr.','G',32,20,'6-13','4-10','4-4',1,3,1,2,0,0,1,1,2],['Cameron Johnson','F',34,18,'6-13','4-10','2-2',4,3,2,1,1,0,4,5,15],['Christian Braun','G',26,12,'5-9','0-2','2-2',1,3,1,1,0,0,1,3,-6],['Bruce Brown','G',22,12,'4-6','2-3','2-2',4,2,0,1,1,0,4,0,-5],['Jamal Murray','G',34,5,'1-14','1-7','2-3',6,6,2,2,0,1,5,6,-9],['Spencer Jones','F',18,5,'2-4','1-1','0-0',3,0,0,1,0,2,1,4,-2]]),
+    announcers:[{name:'Mike Breen',role:'Play-by-play'},{name:'Jeff Van Gundy',role:'Color analyst'},{name:'Doris Burke',role:'Sideline'}],
+    refs:[{name:'Scott Foster',role:'Crew chief'},{name:'Marc Davis',role:'Referee'},{name:'Rodney Mott',role:'Referee'}]
+  },
+  't11g2':{
+    teamStats:{ATL:{pts:104,fgPct:'44.1%',tpPct:'35.2%',ftPct:'72.0%',reb:38,ast:24,stl:7,blk:3,to:14,pip:42,fastBreak:12,bench:28,lead:6},BOS:{pts:119,fgPct:'50.3%',tpPct:'42.1%',ftPct:'80.0%',reb:44,ast:30,stl:9,blk:5,to:11,pip:48,fastBreak:20,bench:32,lead:22}},
+    homeCoach:'Joe Mazzulla',awayCoach:'Quin Snyder',
+    homePlayers:mkP([['Jayson Tatum','F',37,31,'11-22','4-9','5-6',8,6,3,2,1,1,7,3,18],['Jaylen Brown','G',35,26,'10-19','3-7','3-4',5,4,2,1,1,0,5,2,14],['Jrue Holiday','G',34,18,'7-14','2-5','2-2',4,7,1,3,1,0,4,2,12],['Al Horford','C',28,12,'5-9','2-4','0-0',7,3,1,1,2,2,5,2,10],['Kristaps Porzingis','C',22,14,'5-8','1-3','3-4',5,1,1,0,1,1,4,3,8],['Payton Pritchard','G',18,11,'4-7','3-5','0-0',2,3,0,1,0,0,2,1,5]]),
+    awayPlayers:mkP([['Trae Young','G',36,22,'8-20','2-7','4-5',2,9,4,1,0,0,2,3,-14],['Dejounte Murray','G',34,18,'7-16','2-6','2-2',5,5,3,2,0,1,4,2,-10],['De Andre Hunter','F',30,16,'6-11','2-4','2-2',4,2,2,1,0,1,3,2,-8],['Clint Capela','C',26,14,'6-9','0-0','2-4',10,1,1,0,2,4,6,3,-12],['Bogdan Bogdanovic','G',28,12,'4-10','3-6','1-1',2,2,2,1,0,0,2,1,-6]]),
+    announcers:[{name:'Kevin Harlan',role:'Play-by-play'},{name:'Reggie Miller',role:'Color analyst'},{name:'Allie LaForce',role:'Sideline'}],
+    refs:[{name:'Tony Brothers',role:'Crew chief'},{name:'John Goble',role:'Referee'},{name:'Kevin Scott',role:'Referee'}]
+  },
+  's15g3':{
+    teamStats:{IND:{pts:123,fgPct:'48.2%',tpPct:'39.1%',ftPct:'78.0%',reb:40,ast:28,stl:8,blk:3,to:13,pip:44,fastBreak:18,bench:34,lead:10},MIL:{pts:134,fgPct:'53.4%',tpPct:'44.2%',ftPct:'75.0%',reb:46,ast:36,stl:10,blk:5,to:12,pip:56,fastBreak:22,bench:38,lead:18}},
+    homeCoach:'Doc Rivers',awayCoach:'Rick Carlisle',
+    homePlayers:mkP([['Giannis Antetokounmpo','F',36,38,'14-22','1-3','9-12',12,8,3,2,2,4,8,3,14],['Damian Lillard','G',35,28,'10-21','4-9','4-5',4,8,3,1,0,0,4,2,10],['Brook Lopez','C',28,18,'7-11','3-5','1-1',7,2,1,0,2,2,5,2,8],['Khris Middleton','F',30,16,'6-12','2-5','2-2',5,4,2,1,0,1,4,2,6],['Bobby Portis','C',22,14,'5-8','2-4','2-2',6,2,1,0,1,2,4,2,4],['MarJon Beauchamp','F',16,8,'3-6','1-3','1-2',3,1,0,0,0,1,2,1,0]]),
+    awayPlayers:mkP([['Tyrese Haliburton','G',36,26,'9-19','4-8','4-5',4,10,3,2,0,0,4,3,-12,true],['Pascal Siakam','F',34,24,'9-16','2-5','4-5',8,5,2,1,1,2,6,3,-8],['Myles Turner','C',28,18,'7-11','2-4','2-2',8,2,1,0,2,2,6,2,-6],['Andrew Nembhard','G',30,16,'6-12','3-6','1-1',3,6,2,2,0,0,3,2,-4],['Bennedict Mathurin','G',20,14,'5-9','2-4','2-2',3,2,1,1,0,0,3,1,0]]),
+    announcers:[{name:'Mike Breen',role:'Play-by-play'},{name:'Mark Jackson',role:'Color analyst'},{name:'Lisa Salters',role:'Sideline'}],
+    refs:[{name:'Eric Lewis',role:'Crew chief'},{name:'Zach Zarba',role:'Referee'},{name:'Curtis Blair',role:'Referee'}]
+  }
+};
+
+function getDetail(gid){
+  if(GAME_DETAILS[gid]) return GAME_DETAILS[gid];
+  var g=allGames().find(function(x){return x.id===gid;});
+  if(!g) return null;
+  return {
+    teamStats:{},homeCoach:'Head Coach',awayCoach:'Head Coach',
+    homePlayers:mkP([['Player A','G',34,22,'8-17','3-7','3-4',5,5,2,1,0,1,4,2,10],['Player B','F',32,18,'7-14','2-5','2-3',7,3,2,1,1,2,5,2,6],['Player C','C',28,14,'5-9','0-2','4-5',9,2,1,0,2,3,6,2,4],['Player D','G',26,12,'4-10','3-6','1-1',3,4,1,1,0,0,3,2,2],['Player E','F',22,10,'4-8','2-4','0-0',4,2,2,0,0,1,3,1,-2]]),
+    awayPlayers:mkP([['Player F','G',34,20,'7-16','3-7','3-4',4,6,2,2,0,0,4,2,-8],['Player G','F',32,16,'6-13','2-5','2-3',6,3,2,1,1,2,4,2,-6],['Player H','C',28,14,'5-9','0-2','4-5',8,2,1,0,2,3,5,2,-4],['Player I','G',26,12,'4-10','3-6','1-1',2,5,1,1,0,0,2,2,-2],['Player J','F',22,10,'4-8','2-4','0-0',4,2,2,0,0,1,3,1,0]]),
+    announcers:[{name:'Announcer 1',role:'Play-by-play'},{name:'Announcer 2',role:'Color analyst'}],
+    refs:[{name:'Official 1',role:'Crew chief'},{name:'Official 2',role:'Referee'},{name:'Official 3',role:'Referee'}]
+  };
+}
+
+// community data
+var CC={};
+function getComm(id){
+  if(CC[id]) return CC[id];
+  var avg=3.5;
+  if(/Jokic|Giannis|Tatum|Gilgeous|Reaves|Gordon|Haliburton/.test(id)) avg=4.4;
+  if(/Murray_Jamal|Morant/.test(id)) avg=2.1;
+  if(/team_LAL|team_BOS|team_OKC|team_MIL/.test(id)) avg=4.0;
+  if(/ref_0|Foster/.test(id)) avg=2.3;
+  if(/ann_0|Breen|Harlan/.test(id)) avg=4.7;
+  var dist=new Array(10).fill(0);
+  var n=Math.floor(Math.random()*60)+30;
+  for(var i=0;i<n;i++){var v=avg+(Math.random()-.5)*2.5;v=Math.max(.5,Math.min(5,v));dist[Math.round(v*2)-1]++;}
+  var total=dist.reduce(function(a,b){return a+b;},0);
+  var wavg=total>0?(dist.reduce(function(s,v,i){return s+v*(i+1)*.5;},0)/total):avg;
+  var nm=id.match(/player_(?:home|away)_(.+)/);
+  var name=nm?nm[1].replace(/_/g,' '):id;
+  var n2=name.split(' ').pop();
+  var hi=avg>=4,lo=avg<3;
+  var comments=hi?[{u:'HoopHead',r:Math.min(5,avg+.5),t:n2+' was absolutely on it tonight.'},{u:'StatNerd',r:avg,t:'Efficient all night. Numbers back it up.'}]:lo?[{u:'RealTalk',r:avg,t:n2+' was disappointing. Needs to step up.'},{u:'Watcher',r:Math.max(.5,avg-.5),t:'Off night. Hopefully just a blip.'}]:[{u:'BalancedView',r:avg,t:'Solid from '+n2+'. Steady as ever.'},{u:'BoxScorePro',r:avg+.5,t:'Had some nice moments overall.'}];
+  CC[id]={dist:dist,avg:parseFloat(wavg.toFixed(1)),comments:comments};
+  return CC[id];
+}
+
+// history
+var HIST={
+  'player_home_Austin_Reaves':[{date:'Dec 5',game:'vs GSW',myR:3.5,commAvg:3.8,comment:'Quiet 2nd half'},{date:'Jan 22',game:'vs DEN',myR:4.5,commAvg:4.1,comment:'Big 4th quarter'},{date:'Feb 19',game:'vs OKC',myR:4,commAvg:4.0,comment:''},{date:'Mar 1',game:'@ NYK',myR:4.5,commAvg:4.3,comment:''},{date:'Mar 14',game:'vs DEN',myR:5,commAvg:4.7,comment:"Best game I've seen from him"}],
+  'player_away_Nikola_Jokic':[{date:'Dec 2',game:'vs LAL',myR:5,commAvg:4.9,comment:'Untouchable'},{date:'Jan 5',game:'vs OKC',myR:5,commAvg:4.8,comment:'TD again'},{date:'Jan 20',game:'@ PHX',myR:4,commAvg:4.3,comment:'Off night'},{date:'Feb 8',game:'vs MIN',myR:5,commAvg:4.9,comment:''},{date:'Mar 14',game:'@ LAL',myR:4.5,commAvg:4.8,comment:'TD but team lost'}],
+  'player_away_Jamal_Murray':[{date:'Dec 2',game:'vs LAL',myR:4,commAvg:3.8,comment:''},{date:'Jan 5',game:'vs OKC',myR:3.5,commAvg:3.6,comment:''},{date:'Feb 8',game:'vs MIN',myR:4,commAvg:3.9,comment:''},{date:'Mar 14',game:'@ LAL',myR:1,commAvg:1.8,comment:'1-14. Inexcusable.'}],
+  'player_home_Jayson_Tatum':[{date:'Dec 10',game:'@ MIA',myR:4,commAvg:4.1,comment:''},{date:'Jan 15',game:'vs MIL',myR:4.5,commAvg:4.3,comment:'Clutch'},{date:'Feb 22',game:'vs PHI',myR:4.5,commAvg:4.4,comment:''},{date:'Mar 11',game:'vs ATL',myR:5,commAvg:4.6,comment:'Dominant start to finish'}],
+  'player_home_Giannis_Antetokounmpo':[{date:'Dec 8',game:'vs CHI',myR:5,commAvg:4.8,comment:''},{date:'Jan 12',game:'@ CLE',myR:4.5,commAvg:4.5,comment:''},{date:'Feb 18',game:'vs BOS',myR:4,commAvg:4.3,comment:''},{date:'Mar 15',game:'vs IND',myR:5,commAvg:4.9,comment:'38 points. Unstoppable.'}],
+  'team_LAL':[{date:'Dec 10',game:'vs PHX',myR:3.5,commAvg:3.6,comment:''},{date:'Jan 28',game:'vs BOS',myR:4,commAvg:3.9,comment:''},{date:'Mar 14',game:'vs DEN',myR:4.5,commAvg:4.2,comment:'Clutch 4th quarter'}],
+  'ann_0':[{date:'Dec 2',game:'DEN@LAL',myR:5,commAvg:4.8,comment:''},{date:'Mar 11',game:'ATL@BOS',myR:5,commAvg:4.8,comment:'BANG of the year'},{date:'Mar 14',game:'DEN@LAL',myR:5,commAvg:4.8,comment:''}]
+};
+function getHist(id){return HIST[id]||[];}
+function fullHist(id){
+  var base=getHist(id).slice();
+  var live=ratingHistory[id]||[];
+  live.forEach(function(l){
+    var i=base.findIndex(function(m){return m.game===l.game;});
+    if(i>=0) base[i]=l; else base.push(l);
+  });
+  return base;
+}
+
+// ── STATE ──
+var loggedIn=false,ratings={},comments={},ratingHistory={};
+var activeLeague='ALL',activeDay=WEEK[0].day,activeGame=null;
+var prevScreen='games',dEntityId=null,dTab='rate';
+var entityProfileId=null,entityProfileType=null;
+var mpTab='history',profileFilter='all';
+var searchQ='',searchFilter='all';
+var chartI={};
+
+function allGames(){return WEEK.reduce(function(a,d){return a.concat(d.games);},[]);}
+function getGame(id){return allGames().find(function(g){return g.id===id;});}
+function recRating(id,val){
+  if(!loggedIn||val===0) return;
+  if(!ratingHistory[id]) ratingHistory[id]=[];
+  var g=getGame(activeGame)||{};
+  var gl=g.away&&g.home?(g.away+'@'+g.home):'recent';
+  var dayLabel=activeDay||'recent';
+  var idx=ratingHistory[id].findIndex(function(h){return h.game===gl;});
+  var entry={date:dayLabel,game:gl,myR:val,commAvg:getComm(id).avg,comment:comments[id]||''};
+  if(idx>=0) ratingHistory[id][idx]=entry; else ratingHistory[id].push(entry);
+}
+function entityLbl(id){
+  if(!activeGame) return {name:id,sub:''};
+  var d=getDetail(activeGame),g=getGame(activeGame);
+  if(!d||!g) return {name:id,sub:''};
+  if(id==='team_'+g.away) return {name:g.away+' – Team',sub:TEAM_NAMES[g.away]||g.away};
+  if(id==='team_'+g.home) return {name:g.home+' – Team',sub:TEAM_NAMES[g.home]||g.home};
+  if(id==='coach_home') return {name:d.homeCoach,sub:'Head coach · '+g.home};
+  if(id==='coach_away') return {name:d.awayCoach,sub:'Head coach · '+g.away};
+  var allP=(d.homePlayers||[]).concat(d.awayPlayers||[]);
+  for(var i=0;i<allP.length;i++){
+    var p=allP[i];
+    if('player_home_'+p.name.replace(/ /g,'_')===id||'player_away_'+p.name.replace(/ /g,'_')===id) return {name:p.name,sub:p.pos};
+  }
+  var ann=d.announcers||[];
+  for(var i=0;i<ann.length;i++) if('ann_'+i===id) return {name:ann[i].name,sub:ann[i].role};
+  var refs=d.refs||[];
+  for(var i=0;i<refs.length;i++) if('ref_'+i===id) return {name:refs[i].name,sub:refs[i].role};
+  return {name:id,sub:''};
+}
+function cmtIcon(id){
+  if(!loggedIn) return '';
+  var has=!!(comments[id]&&comments[id].trim());
+  return '<button class="cmt-icon'+(has?' hc':'')+'" onclick="event.stopPropagation();openD(\''+id+'\',\'rate\')"><svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M1 1h12v9H8l-3 3V10H1V1z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" fill="none"/></svg></button>';
+}
+
+// ── NAV ──
+function navTo(s){
+  document.querySelectorAll('.bni').forEach(function(b){b.classList.remove('on');});
+  document.getElementById('bn-'+s).classList.add('on');
+  if(s==='games') showGamesScreen();
+  else if(s==='search') showSearchScreen();
+  else if(s==='profile') showProfileScreen();
+}
+function showScr(id){
+  document.querySelectorAll('.scr').forEach(function(s){s.classList.remove('on');});
+  document.getElementById('scr-'+id).classList.add('on');
+}
+
+// ── GAMES SCREEN ──
+function showGamesScreen(){
+  showScr('games');
+  var signInBtn=loggedIn
+    ? '<div style="width:30px;height:30px;border-radius:50%;background:var(--goldl);border:1px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--gold);cursor:pointer" onclick="navTo(\'profile\')">ME</div>'
+    : '<button class="hbtn" onclick="doLogin()">Sign in</button>';
+
+  var leagueOptions=['ALL','NBA','NFL','NHL','MLB','WNBA','EPL','UCL','MLS'].map(function(l){
+    var label=l==='ALL'?'All Leagues':l;
+    return '<option value="'+l+'"'+(l===activeLeague?' selected':'')+'>'+label+'</option>';
+  }).join('');
+
+  document.getElementById('scr-games').innerHTML =
+    '<div class="hdr">'+
+      '<div class="hdr-main">'+
+        '<div class="logo">Box<b>Scored</b></div>'+
+        signInBtn+
+      '</div>'+
+      '<div class="league-bar">'+
+        '<select class="league-select" id="leagueSel" onchange="setLeague(this.value)">'+leagueOptions+'</select>'+
+        '<div class="live-badge"><div class="live-dot"></div> 3 Live</div>'+
+      '</div>'+
+      '<div class="day-nav" id="dayNav"></div>'+
+    '</div>'+
+    '<div id="gamesList" style="padding-top:8px"></div>';
+
+  renderDayNav();
+  renderGamesList();
+}
+function setLeague(l){activeLeague=l;renderGamesList();}
+function renderDayNav(){
+  var el=document.getElementById('dayNav');
+  if(!el) return;
+  el.innerHTML=WEEK.map(function(w){
+    var label=w.day.replace(/\d{4}/,'').replace(/\s+/g,' ').trim();
+    return '<button class="day-pill'+(w.day===activeDay?' on':'')+'" onclick="setDay(\''+w.day+'\')">'+label+'</button>';
+  }).join('');
+}
+function setDay(d){activeDay=d;renderDayNav();renderGamesList();}
+function gameCardHTML(g){
+  var w=g.homeScore>g.awayScore?g.home:g.away;
+  var awColor=w===g.away?'var(--text)':'var(--text3)';
+  var hwColor=w===g.home?'var(--text)':'var(--text3)';
+  var ratedIds=Object.keys(ratings);
+  var rated=ratedIds.some(function(id){return id.indexOf(g.id)>=0;});
+  var footerRight=rated?'<span class="rated-chip">Rated</span>':'<span style="font-size:10px;color:var(--text3)">'+(loggedIn?'Tap to rate':'Tap to view')+'</span>';
+  return '<div class="game-card" onclick="openGame(\''+g.id+'\')">'+
+    '<div class="gc-row">'+
+      '<div class="gc-team">'+
+        '<div class="team-logo-wrap">'+teamLogoHTML(g.away,32)+'</div>'+
+        '<div class="gc-name" style="color:'+awColor+'">'+g.away+'</div>'+
+      '</div>'+
+      '<div class="gc-score-block">'+
+        '<div class="gc-score">'+g.awayScore+'<span class="sep">–</span>'+g.homeScore+'</div>'+
+        '<div class="gc-status">Final</div>'+
+      '</div>'+
+      '<div class="gc-team r">'+
+        '<div class="team-logo-wrap">'+teamLogoHTML(g.home,32)+'</div>'+
+        '<div class="gc-name" style="color:'+hwColor+'">'+g.home+'</div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="gc-footer"><span>'+g.time+' ET</span>'+footerRight+'</div>'+
+  '</div>';
+}
+function renderGamesList(){
+  var el=document.getElementById('gamesList');
+  if(!el) return;
+  var dayData=WEEK.find(function(w){return w.day===activeDay;});
+  if(!dayData){el.innerHTML='<div style="padding:40px 16px;text-align:center;color:var(--text3)">No games</div>';return;}
+  var games=activeLeague==='ALL'?dayData.games:dayData.games.filter(function(g){return g.league===activeLeague;});
+  if(!games.length){el.innerHTML='<div style="padding:40px 16px;text-align:center;color:var(--text3)">No '+(activeLeague==='ALL'?'':activeLeague+' ')+'games on '+activeDay+'</div>';return;}
+
+  // Group by league when ALL is selected
+  var html='';
+  if(activeLeague==='ALL'){
+    var leagueOrder=['NBA','NFL','NHL','MLB','WNBA','EPL','UCL','MLS'];
+    var grouped={};
+    games.forEach(function(g){if(!grouped[g.league])grouped[g.league]=[];grouped[g.league].push(g);});
+    leagueOrder.forEach(function(lg){
+      if(!grouped[lg]||!grouped[lg].length) return;
+      html+='<div style="padding:10px 16px 4px;font-family:\'Barlow Condensed\',sans-serif;font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.1em;text-transform:uppercase">'+lg+'</div>';
+      html+='<div class="games-list" style="margin-bottom:4px">';
+      grouped[lg].forEach(function(g){ html+=gameCardHTML(g); });
+      html+='</div>';
+    });
+  } else {
+    html='<div class="games-list">';
+    games.forEach(function(g){ html+=gameCardHTML(g); });
+    html+='</div>';
+  }
+  el.innerHTML=html;
+}
+
+// ── GAME DETAIL ──
+function openGame(id){
+  activeGame=id;prevScreen='games';
+  var g=getGame(id);
+  var awName=TEAM_NAMES[g.away]||g.away;
+  var hwName=TEAM_NAMES[g.home]||g.home;
+  document.getElementById('scr-detail').innerHTML=
+    '<div class="hdr">'+
+      '<div class="det-hdr">'+
+        '<button class="back" onclick="goToGames()">← Back</button>'+
+        '<div style="flex:1;overflow:hidden">'+
+          '<div class="det-title">'+awName+' at '+hwName+'</div>'+
+          '<div class="det-sub">'+g.awayScore+' – '+g.homeScore+' · Final · '+g.league+'</div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="det-tabs" id="detTabs">'+
+        '<button class="dtab on" onclick="switchDetTab(\'teams\',this)">Teams</button>'+
+        '<button class="dtab" onclick="switchDetTab(\'home\',this)">'+g.home+' Players</button>'+
+        '<button class="dtab" onclick="switchDetTab(\'away\',this)">'+g.away+' Players</button>'+
+        '<button class="dtab" onclick="switchDetTab(\'other\',this)">Refs & Crew</button>'+
+      '</div>'+
+    '</div>'+
+    '<div id="detBody"></div>';
+  showScr('detail');
+  renderDetTab('teams');
+}
+function goToGames(){showGamesScreen();showScr('games');}
+function switchDetTab(key,el){
+  document.querySelectorAll('#detTabs .dtab').forEach(function(t){t.classList.remove('on');});
+  el.classList.add('on');
+  renderDetTab(key);
+}
+function renderDetTab(key){
+  var g=getGame(activeGame),d=getDetail(activeGame);
+  var el=document.getElementById('detBody');
+  if(key==='teams') el.innerHTML='<div class="tab-body">'+renderTeamsTab(g,d)+'</div>';
+  else if(key==='home') el.innerHTML='<div class="tab-body">'+renderPlayersTab(g,d,'home')+'</div>';
+  else if(key==='away') el.innerHTML='<div class="tab-body">'+renderPlayersTab(g,d,'away')+'</div>';
+  else el.innerHTML='<div class="tab-body">'+renderOtherTab(g,d)+'</div>';
+}
+function hi(a,b,h){if(h===false) return a<b?'w':'lo'; return a>b?'w':'lo';}
+function renderTeamsTab(g,d){
+  var ts=d.teamStats,aw=g.away,hw=g.home;
+  var awColor=TEAM_COLORS[aw]||'#fff';
+  var hwColor=TEAM_COLORS[hw]||'#fff';
+  if(!ts[aw]||!ts[hw]) return '<p style="color:var(--text3);font-size:13px;padding:8px 0">Full stats not available for this game.</p>';
+  var rows=[['Points',ts[aw].pts,ts[hw].pts,true],['FG%',ts[aw].fgPct,ts[hw].fgPct,true],['3-Pt%',ts[aw].tpPct,ts[hw].tpPct,true],['FT%',ts[aw].ftPct,ts[hw].ftPct,true],['Rebounds',ts[aw].reb,ts[hw].reb,true],['Assists',ts[aw].ast,ts[hw].ast,true],['Steals',ts[aw].stl,ts[hw].stl,true],['Blocks',ts[aw].blk,ts[hw].blk,true],['Turnovers',ts[aw].to,ts[hw].to,false],['Paint pts',ts[aw].pip,ts[hw].pip,true],['Fast break',ts[aw].fastBreak,ts[hw].fastBreak,true],['Bench pts',ts[aw].bench,ts[hw].bench,true],['Biggest lead',ts[aw].lead,ts[hw].lead,true]];
+  var html=
+    '<div class="matchup">'+
+      '<div class="tc" onclick="openD(\'team_'+aw+'\',\'rate\')">'+
+        teamLogoHTML(aw,40)+
+        '<div class="tc-abbr" style="color:'+awColor+';margin-top:8px">'+aw+'</div>'+
+        '<div class="tc-full">'+(TEAM_NAMES[aw]||aw)+'</div>'+
+        '<div style="margin-top:10px;display:flex;align-items:center;gap:3px">'+starsHTML('team_'+aw,16,'card',true)+'</div>'+
+      '</div>'+
+      '<div class="score-col">'+
+        '<div class="big-score">'+g.awayScore+'<span style="color:var(--text4);font-size:22px;margin:0 4px">–</span>'+g.homeScore+'</div>'+
+        '<div class="fin-tag">Final</div>'+
+      '</div>'+
+      '<div class="tc" onclick="openD(\'team_'+hw+'\',\'rate\')">'+
+        teamLogoHTML(hw,40)+
+        '<div class="tc-abbr" style="color:'+hwColor+';margin-top:8px">'+hw+'</div>'+
+        '<div class="tc-full">'+(TEAM_NAMES[hw]||hw)+'</div>'+
+        '<div style="margin-top:10px;display:flex;align-items:center;gap:3px">'+starsHTML('team_'+hw,16,'card',true)+'</div>'+
+      '</div>'+
+    '</div>';
+  if(!loggedIn) html+='<div class="login-wall"><p>Sign in to rate teams, players and more</p><button class="lbtn" onclick="doLogin()">Sign in to rate</button></div>';
+  html+='<div class="stat-hdr"><div class="sv l" style="font-size:11px;font-weight:600;color:'+awColor+'">'+aw+'</div><div class="sl"></div><div class="sv r" style="font-size:11px;font-weight:600;color:'+hwColor+'">'+hw+'</div></div>';
+  rows.forEach(function(r){
+    html+='<div class="stat-row"><div class="sv l '+hi(r[1],r[2],r[3])+'">'+r[1]+'</div><div class="sl">'+r[0]+'</div><div class="sv r '+hi(r[2],r[1],r[3])+'">'+r[2]+'</div></div>';
+  });
+  return html;
+}
+function renderPlayersTab(g,d,side){
+  var players=side==='home'?d.homePlayers:d.awayPlayers;
+  var team=side==='home'?g.home:g.away;
+  var coach=side==='home'?d.homeCoach:d.awayCoach;
+  var cid='coach_'+side;
+  var html=
+    '<div class="coach-row" onclick="openD(\''+cid+'\',\'rate\')">'+
+      '<div style="display:flex;align-items:center;gap:10px">'+
+        '<div class="or-photo-fb">'+coach.split(' ').map(function(w){return w[0];}).join('').slice(0,2)+'</div>'+
+        '<div><div style="font-size:14px;font-weight:500">'+coach+'</div><div style="font-size:11px;color:var(--text3)">Head coach · '+team+'</div></div>'+
+      '</div>'+
+      '<div style="display:flex;align-items:center;gap:5px">'+starsHTML(cid,19,'card',true)+cmtIcon(cid)+'</div>'+
+    '</div>'+
+    '<div class="pt-wrap"><table class="ptbl">'+
+    '<thead><tr><th></th><th>MIN</th><th>PTS</th><th class="w">FG</th><th class="w">3PT</th><th class="w">FT</th><th>REB</th><th>AST</th><th>TO</th><th>STL</th><th>BLK</th><th>OREB</th><th>DREB</th><th>PF</th><th>+/-</th><th class="rc">Rate</th></tr></thead><tbody>';
+  players.forEach(function(p){
+    var pid='player_'+side+'_'+p.name.replace(/ /g,'_');
+    var pmC=p.pm>0?'pos':p.pm<0?'neg':'';
+    var pmS=p.pm>0?('+'+p.pm):p.pm;
+    html+=
+      '<tr onclick="openD(\''+pid+'\',\'rate\')">'+
+        '<td><div class="pcell">'+playerImgHTML(p.name,30)+'<div><div class="pname">'+p.name+(p.td?'<span class="td-badge">TD</span>':'')+'</div><div class="ppos">'+p.pos+'</div></div></div></td>'+
+        '<td>'+p.min+'</td>'+
+        '<td class="'+(p.pts>=25?'hi':'')+'">'+p.pts+'</td>'+
+        '<td class="w">'+p.fg+'</td><td class="w">'+p.tp+'</td><td class="w">'+p.ft+'</td>'+
+        '<td class="'+(p.reb>=10?'hi':'')+'">'+p.reb+'</td>'+
+        '<td class="'+(p.ast>=10?'hi':'')+'">'+p.ast+'</td>'+
+        '<td>'+p.to+'</td><td>'+(p.stl||'–')+'</td><td>'+(p.blk||'–')+'</td>'+
+        '<td>'+p.oreb+'</td><td>'+p.dreb+'</td><td>'+p.pf+'</td>'+
+        '<td class="'+pmC+'">'+pmS+'</td>'+
+        '<td class="rc" onclick="event.stopPropagation()"><div class="rcell">'+starsHTML(pid,13,'table',true)+cmtIcon(pid)+'</div></td>'+
+      '</tr>';
+  });
+  html+='</tbody></table></div>';
+  if(!loggedIn) html+='<div class="login-wall"><p>Sign in to rate players</p><button class="lbtn" onclick="doLogin()">Sign in to rate</button></div>';
+  else html+='<button class="sbtn" onclick="submitRatings()">Submit ratings</button>';
+  return html;
+}
+function renderOtherTab(g,d){
+  var html='<div class="og-lbl">Broadcast crew</div>';
+  (d.announcers||[]).forEach(function(a,i){
+    html+=
+      '<div class="other-row" onclick="openD(\'ann_'+i+'\',\'rate\')">'+
+        '<div class="or-left">'+
+          '<div class="or-photo-fb">'+a.name.split(' ').map(function(w){return w[0];}).join('').slice(0,2)+'</div>'+
+          '<div><div class="or-name">'+a.name+'</div><div class="or-sub">'+a.role+'</div></div>'+
+        '</div>'+
+        '<div style="display:flex;align-items:center;gap:5px">'+starsHTML('ann_'+i,19,'card',true)+cmtIcon('ann_'+i)+'</div>'+
+      '</div>';
+  });
+  html+='<div class="og-lbl">Officials</div>';
+  (d.refs||[]).forEach(function(r,i){
+    html+=
+      '<div class="other-row" onclick="openD(\'ref_'+i+'\',\'rate\')">'+
+        '<div class="or-left">'+
+          '<div class="or-photo-fb">'+r.name.split(' ').map(function(w){return w[0];}).join('').slice(0,2)+'</div>'+
+          '<div><div class="or-name">'+r.name+'</div><div class="or-sub">'+r.role+'</div></div>'+
+        '</div>'+
+        '<div style="display:flex;align-items:center;gap:5px">'+starsHTML('ref_'+i,19,'card',true)+cmtIcon('ref_'+i)+'</div>'+
+      '</div>';
+  });
+  if(!loggedIn) html+='<div class="login-wall"><p>Sign in to rate refs and broadcast</p><button class="lbtn" onclick="doLogin()">Sign in to rate</button></div>';
+  else html+='<button class="sbtn" onclick="submitRatings()">Submit ratings</button>';
+  return html;
+}
+
+// ── DRAWER ──
+function openD(id,tab){
+  dEntityId=id;dTab=tab||'rate';
+  var el=entityLbl(id);
+  document.getElementById('dName').textContent=el.name;
+  document.getElementById('dSub').textContent=el.sub;
+  rDrawer();
+  document.getElementById('dOverlay').classList.add('on');
+}
+function rDrawer(){
+  var tabs=['rate','community','history'];
+  var labels=['Rate','Community','My History'];
+  var tabHTML=tabs.map(function(t,i){
+    return '<button class="dit'+(dTab===t?' on':'')+'" onclick="setDTab(\''+t+'\')">'+labels[i]+'</button>';
+  }).join('');
+  document.getElementById('dTabs').innerHTML=tabHTML;
+  var c='';
+  if(dTab==='rate') c=dPaneRate();
+  else if(dTab==='community') c=dPaneComm(dEntityId);
+  else c=dPaneHist();
+  document.getElementById('dContent').innerHTML='<div class="d-pane on">'+c+'</div>';
+  if(dTab!=='community') setTimeout(function(){drawDChart();},60);
+}
+function setDTab(t){dTab=t;rDrawer();}
+function dPaneRate(){
+  var id=dEntityId;
+  if(!loggedIn) return '<div style="text-align:center;padding:16px 0"><p style="font-size:13px;color:var(--text3);margin-bottom:14px">Sign in to rate and comment</p><button class="lbtn" onclick="doLogin()">Sign in</button></div>';
+  var myC=comments[id]||'';
+  var hist=fullHist(id);
+  var html=
+    '<div class="dr-row"><div class="dr-lbl">My rating</div><div style="display:flex;align-items:center;gap:6px">'+starsHTML(id,24,'drawer',false)+'</div></div>'+
+    '<textarea class="dr-txt" rows="3" placeholder="Leave a comment on this performance…" oninput="saveComment(\''+id+'\',this.value)">'+myC+'</textarea>';
+  if(hist.length>=2){
+    html+=
+      '<div class="dlbl" style="margin-bottom:6px">My rating trend</div>'+
+      '<div class="chart-legend">'+
+        '<span><span class="ldot" style="background:#4a9eff"></span><span style="font-size:11px;color:var(--text3)">My ratings</span></span>'+
+        '<span><span class="ldot" style="background:#f5a623"></span><span style="font-size:11px;color:var(--text3)">Community avg</span></span>'+
+      '</div>'+
+      '<div style="position:relative;height:100px;margin-bottom:10px"><canvas id="dcMini"></canvas></div>'+
+      '<button class="cta-link" onclick="setDTab(\'history\')">View full history →</button>';
+  }
+  return html;
+}
+function dPaneComm(id){
+  var c=getComm(id);
+  var total=c.dist.reduce(function(a,b){return a+b;},0);
+  var wavg=total>0?(c.dist.reduce(function(s,v,i){return s+v*(i+1)*.5;},0)/total).toFixed(1):'–';
+  var maxC=Math.max.apply(null,c.dist.concat([1]));
+  var html='<div class="dlbl">Community ratings</div><div class="d-avg">'+wavg+' ★</div><div class="d-cnt">'+total+' ratings</div>';
+  for(var i=9;i>=0;i--){
+    var lbl=((i+1)*.5).toFixed(1).replace('.0','');
+    var pct=Math.round(c.dist[i]/maxC*100);
+    html+='<div class="dbar-row"><div class="dbl">'+lbl+'</div><div class="dbt"><div class="dbf" style="width:'+pct+'%"></div></div><div class="dbc">'+c.dist[i]+'</div></div>';
+  }
+  if(c.comments.length){
+    html+='<div class="dlbl" style="margin-top:14px">What people are saying</div>';
+    c.comments.forEach(function(cm){
+      var cs='';
+      for(var n=1;n<=5;n++) cs+=sSVG(12,sF(cm.r,n));
+      html+=
+        '<div class="comm-item">'+
+          '<div class="comm-top">'+
+            '<div class="comm-av">'+cm.u.slice(0,2).toUpperCase()+'</div>'+
+            '<div class="comm-user">'+cm.u+'</div>'+
+            '<div style="display:inline-flex;gap:1px">'+cs+'</div>'+
+            '<span style="font-size:10px;color:var(--text3);margin-left:2px">'+fR(cm.r)+'</span>'+
+          '</div>'+
+          '<div class="comm-txt">'+cm.t+'</div>'+
+        '</div>';
+    });
+  }
+  return html;
+}
+function dPaneHist(){
+  var id=dEntityId;
+  if(!loggedIn) return '<div style="text-align:center;padding:16px 0"><p style="font-size:13px;color:var(--text3);margin-bottom:14px">Sign in to view history</p><button class="lbtn" onclick="doLogin()">Sign in</button></div>';
+  var hist=fullHist(id);
+  if(hist.length<2) return '<p style="font-size:13px;color:var(--text3)">Rate in more games to see your trend.</p>';
+  var html=
+    '<div class="chart-legend">'+
+      '<span><span class="ldot" style="background:#4a9eff"></span><span style="font-size:11px;color:var(--text3)">My ratings</span></span>'+
+      '<span><span class="ldot" style="background:#f5a623"></span><span style="font-size:11px;color:var(--text3)">Community avg</span></span>'+
+    '</div>'+
+    '<div style="position:relative;height:160px;margin-bottom:16px"><canvas id="dcHist"></canvas></div>'+
+    '<div class="dlbl">Game log</div>';
+  var revHist=hist.slice().reverse();
+  revHist.forEach(function(h){
+    var cs='';
+    for(var n=1;n<=5;n++) cs+=sSVG(11,sF(h.myR,n));
+    html+=
+      '<div class="game-hist-row" style="cursor:default">'+
+        '<div><div class="ghr-matchup">'+h.game+'</div><div class="ghr-date">'+h.date+'</div>'+(h.comment?'<div class="ghr-comment">"'+h.comment+'"</div>':'')+'</div>'+
+        '<div style="text-align:right;flex-shrink:0">'+
+          '<div style="display:inline-flex;align-items:center;gap:2px">'+cs+'</div>'+
+          '<div class="ghr-my">'+fR(h.myR)+' ★</div>'+
+          '<div class="ghr-comm">comm: '+h.commAvg+'</div>'+
+        '</div>'+
+      '</div>';
+  });
+  return html;
+}
+function drawDChart(){
+  var id=dEntityId,hist=fullHist(id);
+  if(hist.length<2) return;
+  var labels=hist.map(function(h){return h.date;});
+  var my=hist.map(function(h){return h.myR;});
+  var comm=hist.map(function(h){return h.commAvg;});
+  function mk(cid){
+    var cv=document.getElementById(cid);if(!cv)return;
+    if(chartI[cid])chartI[cid].destroy();
+    chartI[cid]=new Chart(cv,{type:'line',data:{labels:labels,datasets:[
+      {data:my,borderColor:'#4a9eff',backgroundColor:'rgba(74,158,255,.12)',borderWidth:2,pointRadius:4,pointBackgroundColor:'#4a9eff',tension:.35,fill:true},
+      {data:comm,borderColor:'#f5a623',backgroundColor:'transparent',borderWidth:1.5,pointRadius:3,pointBackgroundColor:'#f5a623',tension:.35,borderDash:[4,3]}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{min:0,max:5,ticks:{stepSize:1,color:'rgba(255,255,255,.3)',font:{size:10}},grid:{color:'rgba(255,255,255,.06)'}},x:{ticks:{color:'rgba(255,255,255,.3)',font:{size:9},maxRotation:0,autoSkip:true,maxTicksLimit:5},grid:{display:false}}}}});
+  }
+  mk('dcMini');mk('dcHist');
+}
+function closeD(){document.getElementById('dOverlay').classList.remove('on');}
+function maybeClose(e){if(e.target===document.getElementById('dOverlay'))closeD();}
+function saveComment(id,val){comments[id]=val.trim();}
+
+// ── SEARCH SCREEN ──
+function showSearchScreen(){
+  showScr('search');
+  document.getElementById('scr-search').innerHTML=
+    '<div class="hdr">'+
+      '<div class="hdr-main"><div class="logo">Box<b>Scored</b></div></div>'+
+      '<div class="search-bar-wrap">'+
+        '<div class="search-input-row">'+
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>'+
+          '<input class="sinput" id="searchInput" placeholder="Search players, teams…" value="'+searchQ+'" oninput="onSearch(this.value)">'+
+        '</div>'+
+      '</div>'+
+      '<div class="search-filters">'+
+        ['all','players','teams','leagues'].map(function(f){
+          return '<button class="sf'+(searchFilter===f?' on':'')+'" onclick="setSearchFilter(\''+f+'\')">'+f.charAt(0).toUpperCase()+f.slice(1)+'</button>';
+        }).join('')+
+      '</div>'+
+    '</div>'+
+    '<div id="searchResults"></div>';
+  renderSearchResults();
+}
+function onSearch(q){searchQ=q;renderSearchResults();}
+function setSearchFilter(f){searchFilter=f;renderSearchResults();}
+
+var FEATURED_TEAMS=['LAL','BOS','OKC','MIL','GSW','DEN','PHX','MIA'];
+var FEATURED_PLAYERS=['Austin Reaves','Nikola Jokic','Jayson Tatum','Giannis Antetokounmpo','Shai Gilgeous-Alexander','Luka Doncic','Damian Lillard'];
+var ALL_LEAGUES={NBA:'Basketball',NFL:'Football',NHL:'Hockey',MLB:'Baseball',WNBA:'Basketball',EPL:'Soccer',UCL:'Soccer',MLS:'Soccer'};
+
+function renderSearchResults(){
+  var el=document.getElementById('searchResults');if(!el)return;
+  var q=searchQ.toLowerCase();
+
+  var teamResults=FEATURED_TEAMS.filter(function(abbr){
+    if(searchFilter==='players'||searchFilter==='leagues') return false;
+    if(!q) return searchFilter==='all'||searchFilter==='teams';
+    var name=(TEAM_NAMES[abbr]||abbr).toLowerCase();
+    return name.indexOf(q)>=0||abbr.toLowerCase().indexOf(q)>=0;
+  });
+  var playerResults=FEATURED_PLAYERS.filter(function(name){
+    if(searchFilter==='teams'||searchFilter==='leagues') return false;
+    if(!q) return searchFilter==='all'||searchFilter==='players';
+    return name.toLowerCase().indexOf(q)>=0;
+  });
+  var leagueResults=Object.keys(ALL_LEAGUES).filter(function(k){
+    if(searchFilter==='players'||searchFilter==='teams') return false;
+    if(!q) return searchFilter==='all'||searchFilter==='leagues';
+    return k.toLowerCase().indexOf(q)>=0||ALL_LEAGUES[k].toLowerCase().indexOf(q)>=0;
+  });
+
+  var html='';
+  if(teamResults.length){
+    html+='<div class="search-section-hdr">Teams</div>';
+    teamResults.forEach(function(abbr){
+      var comm=getComm('team_'+abbr);
+      html+=
+        '<div class="search-result" onclick="openEntityProfile(\'team\',\''+abbr+'\')">'+
+          '<div>'+teamLogoHTML(abbr,36)+'</div>'+
+          '<div style="flex:1"><div class="sr-name">'+(TEAM_NAMES[abbr]||abbr)+'</div><div class="sr-sub">Community avg: '+comm.avg+' ★</div></div>'+
+          '<svg class="sr-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>'+
+        '</div>';
+    });
+  }
+  if(playerResults.length){
+    html+='<div class="search-section-hdr">Players</div>';
+    playerResults.forEach(function(name){
+      var hk=Object.keys(HIST).find(function(k){return k.indexOf(name.replace(/ /g,'_'))>=0;});
+      var avgR=hk?fR(HIST[hk].reduce(function(s,h){return s+h.myR;},0)/HIST[hk].length):getComm('player_x_'+name.replace(/ /g,'_')).avg.toFixed(1);
+      html+=
+        '<div class="search-result" onclick="openEntityProfile(\'player\',\''+name.replace(/ /g,'_')+'\')">'+
+          '<div>'+playerImgHTML(name,36)+'</div>'+
+          '<div style="flex:1"><div class="sr-name">'+name+'</div><div class="sr-sub">NBA Player · Community avg: '+avgR+' ★</div></div>'+
+          '<svg class="sr-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>'+
+        '</div>';
+    });
+  }
+  if(leagueResults.length){
+    html+='<div class="search-section-hdr">Leagues</div>';
+    leagueResults.forEach(function(k){
+      html+=
+        '<div class="search-result" onclick="setLeagueAndGo(\''+k+'\')">'+
+          '<div style="width:36px;height:36px;border-radius:8px;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-family:\'Barlow Condensed\',sans-serif;font-size:13px;font-weight:700;color:var(--gold)">'+k+'</div>'+
+          '<div style="flex:1"><div class="sr-name">'+k+'</div><div class="sr-sub">'+ALL_LEAGUES[k]+'</div></div>'+
+          '<svg class="sr-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>'+
+        '</div>';
+    });
+  }
+  if(!html) html='<div style="padding:40px 16px;text-align:center;color:var(--text3)">No results for "'+searchQ+'"</div>';
+  el.innerHTML=html;
+}
+function setLeagueAndGo(l){activeLeague=l;navTo('games');}
+
+// ── ENTITY PROFILE ──
+function openEntityProfile(type,id){
+  entityProfileType=type;entityProfileId=id;
+  var cur=document.querySelector('.scr.on');
+  prevScreen=cur?cur.id.replace('scr-',''):'search';
+  renderEntityProfile();
+  showScr('entity');
+}
+function renderEntityProfile(){
+  var type=entityProfileType,id=entityProfileId;
+  var histKey=type==='team'?('team_'+id):(Object.keys(HIST).find(function(k){return k.indexOf(id)>=0;})||('player_x_'+id));
+  var hist=fullHist(histKey);
+  var myAvg=hist.length>0?fR(hist.reduce(function(s,h){return s+h.myR;},0)/hist.length):'–';
+  var comm=getComm(histKey);
+  var heroImg=type==='team'?teamLogoHTML(id,60):playerImgHTML(id.replace(/_/g,' '),60);
+  var heroName=type==='team'?(TEAM_NAMES[id]||id):(id.replace(/_/g,' '));
+  var heroSub=type==='team'?'NBA Team':'NBA Player';
+
+  document.getElementById('scr-entity').innerHTML=
+    '<div class="hdr">'+
+      '<div class="det-hdr">'+
+        '<button class="back" onclick="goBackFromEntity()">← Back</button>'+
+        '<div><div class="det-title">'+heroName+'</div><div class="det-sub">'+heroSub+'</div></div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="ep-hero">'+
+      '<div class="ep-top">'+
+        '<div>'+heroImg+'</div>'+
+        '<div><div class="ep-name">'+heroName+'</div><div class="ep-meta">'+heroSub+'</div></div>'+
+      '</div>'+
+      '<div class="ep-stats-row">'+
+        '<div class="ep-stat"><div class="ep-stat-val">'+comm.avg+' ★</div><div class="ep-stat-lbl">Community avg</div></div>'+
+        '<div class="ep-stat"><div class="ep-stat-val">'+(myAvg||comm.avg)+' ★</div><div class="ep-stat-lbl">Your avg</div></div>'+
+        '<div class="ep-stat"><div class="ep-stat-val">'+(hist.length||'–')+'</div><div class="ep-stat-lbl">Games rated</div></div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="ep-tabs">'+
+      '<button class="eptab on" onclick="switchEPTab(\'history\',this)">History</button>'+
+      '<button class="eptab" onclick="switchEPTab(\'community\',this)">Community</button>'+
+    '</div>'+
+    '<div id="epBody" class="ep-body">'+renderEPHistory(histKey,hist)+'</div>';
+
+  setTimeout(function(){drawEPChart(histKey);},80);
+}
+function switchEPTab(key,el){
+  document.querySelectorAll('.eptab').forEach(function(t){t.classList.remove('on');});
+  el.classList.add('on');
+  var histKey=entityProfileType==='team'?('team_'+entityProfileId):(Object.keys(HIST).find(function(k){return k.indexOf(entityProfileId)>=0;})||('player_x_'+entityProfileId));
+  var hist=fullHist(histKey);
+  document.getElementById('epBody').innerHTML=key==='history'?renderEPHistory(histKey,hist):dPaneComm(histKey);
+  if(key==='history') setTimeout(function(){drawEPChart(histKey);},60);
+}
+function renderEPHistory(histKey,hist){
+  if(!hist.length) return '<p style="color:var(--text3);font-size:13px">No ratings yet.</p>';
+  var html=
+    '<div class="chart-legend">'+
+      '<span><span class="ldot" style="background:#4a9eff"></span><span style="font-size:11px;color:var(--text3)">My rating</span></span>'+
+      '<span><span class="ldot" style="background:#f5a623"></span><span style="font-size:11px;color:var(--text3)">Community avg</span></span>'+
+    '</div>'+
+    '<div class="chart-box"><canvas id="epChart"></canvas></div>'+
+    '<div class="dlbl" style="margin-bottom:8px">All games</div>';
+  var revHist=hist.slice().reverse();
+  revHist.forEach(function(h){
+    var cs='';
+    for(var n=1;n<=5;n++) cs+=sSVG(12,sF(h.myR,n));
+    html+=
+      '<div class="game-hist-row">'+
+        '<div><div class="ghr-matchup">'+h.game+'</div><div class="ghr-date">'+h.date+'</div>'+(h.comment?'<div class="ghr-comment">"'+h.comment+'"</div>':'')+'</div>'+
+        '<div style="text-align:right;flex-shrink:0">'+
+          '<div style="display:inline-flex;align-items:center;gap:2px">'+cs+'</div>'+
+          '<div class="ghr-my">'+fR(h.myR)+' ★</div>'+
+          '<div class="ghr-comm">comm: '+h.commAvg+'</div>'+
+        '</div>'+
+      '</div>';
+  });
+  return html;
+}
+function drawEPChart(histKey){
+  var hist=fullHist(histKey);if(hist.length<2)return;
+  var cv=document.getElementById('epChart');if(!cv)return;
+  if(chartI.epChart) chartI.epChart.destroy();
+  chartI.epChart=new Chart(cv,{type:'line',data:{
+    labels:hist.map(function(h){return h.date;}),
+    datasets:[
+      {data:hist.map(function(h){return h.myR;}),borderColor:'#4a9eff',backgroundColor:'rgba(74,158,255,.12)',borderWidth:2,pointRadius:4,pointBackgroundColor:'#4a9eff',tension:.35,fill:true},
+      {data:hist.map(function(h){return h.commAvg;}),borderColor:'#f5a623',backgroundColor:'transparent',borderWidth:1.5,pointRadius:3,pointBackgroundColor:'#f5a623',tension:.35,borderDash:[4,3]}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{min:0,max:5,ticks:{stepSize:1,color:'rgba(255,255,255,.3)',font:{size:10}},grid:{color:'rgba(255,255,255,.06)'}},x:{ticks:{color:'rgba(255,255,255,.3)',font:{size:9},maxRotation:0,autoSkip:true,maxTicksLimit:5},grid:{display:false}}}}});
+}
+function goBackFromEntity(){showScr(prevScreen==='search'?'search':prevScreen);}
+
+// ── MY PROFILE ──
+var FRIENDS=[{handle:'@jokic_fan',name:'Nuggets Mike',av:'NM',ratings:142,following:true},{handle:'@lakersnation',name:'LakeShow Ed',av:'LE',ratings:89,following:false},{handle:'@hoophead99',name:'Hoop Head',av:'HH',ratings:203,following:true},{handle:'@statqueen',name:'Ana Stats',av:'AS',ratings:317,following:false}];
+var ACTIVITY=[{user:'Nuggets Mike',av:'NM',action:'rated',entity:'Nikola Jokic',val:4.5,time:'2h ago'},{user:'Hoop Head',av:'HH',action:'rated',entity:'LAL vs DEN',val:5,time:'3h ago'},{user:'LakeShow Ed',av:'LE',action:'commented on',entity:'Scott Foster',val:1,time:'5h ago'},{user:'Ana Stats',av:'AS',action:'rated',entity:'Jayson Tatum',val:4,time:'6h ago'},{user:'Nuggets Mike',av:'NM',action:'rated',entity:'Jamal Murray',val:1.5,time:'8h ago'}];
+var FAVTEAMS=['LAL','BOS','OKC'];
+var FAVPLAYERS=['Austin Reaves','Nikola Jokic','Jayson Tatum'];
+var COMPARE=[{entity:'Nikola Jokic',sub:'Center · DEN',mine:4.5,theirs:5.0,friend:'Nuggets Mike'},{entity:'Jamal Murray',sub:'Guard · DEN',mine:1,theirs:1.5,friend:'Nuggets Mike'},{entity:'Austin Reaves',sub:'Guard · LAL',mine:5,theirs:3.5,friend:'LakeShow Ed'},{entity:'Scott Foster',sub:'Crew chief',mine:1,theirs:2,friend:'Hoop Head'}];
+
+function showProfileScreen(){showScr('profile');renderMPScreen();}
+function renderMPScreen(){
+  var ratedIds=Object.keys(ratings).filter(function(id){return ratings[id]>0;});
+  var seedIds=Object.keys(HIST);
+  var allIds=[];
+  var seen={};
+  ratedIds.concat(seedIds).forEach(function(id){if(!seen[id]){seen[id]=1;allIds.push(id);}});
+  var totalRatings=allIds.reduce(function(s,id){return s+fullHist(id).length;},0);
+  var overallAvg=allIds.length>0?(allIds.reduce(function(s,id){var h=fullHist(id);return s+(h.length?h.reduce(function(a,b){return a+b.myR;},0)/h.length:0);},0)/allIds.length).toFixed(1):'–';
+  var followingCount=FRIENDS.filter(function(f){return f.following;}).length;
+
+  var signInBanner=!loggedIn?'<div class="login-wall"><p>Sign in to save your ratings and connect with friends</p><button class="lbtn" onclick="doLogin()">Sign in</button></div>':'';
+
+  document.getElementById('scr-profile').innerHTML=
+    '<div class="hdr"><div class="hdr-main"><div class="logo">Box<b>Scored</b></div>'+(loggedIn?'':'<button class="hbtn" onclick="doLogin()">Sign in</button>')+'</div></div>'+
+    '<div class="mp-hero">'+
+      '<div class="mp-top">'+
+        '<div class="mp-av">'+(loggedIn?'ME':'?')+'</div>'+
+        '<div>'+
+          '<div class="mp-name">'+(loggedIn?'Your Profile':'Guest')+'</div>'+
+          '<div class="mp-handle">'+(loggedIn?'@me · BoxScored member':'Sign in to save your ratings')+'</div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="mp-stats">'+
+        '<div class="mp-stat"><div class="mp-stat-val">'+allIds.length+'</div><div class="mp-stat-lbl">Rated</div></div>'+
+        '<div class="mp-stat"><div class="mp-stat-val">'+totalRatings+'</div><div class="mp-stat-lbl">Ratings</div></div>'+
+        '<div class="mp-stat"><div class="mp-stat-val">'+overallAvg+' ★</div><div class="mp-stat-lbl">Avg given</div></div>'+
+        '<div class="mp-stat"><div class="mp-stat-val">'+followingCount+'</div><div class="mp-stat-lbl">Following</div></div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="mp-tabs">'+
+      ['history','favorites','friends','activity','compare'].map(function(t){
+        return '<button class="mptab'+(mpTab===t?' on':'')+'" onclick="setMPTab(\''+t+'\')">'+t.charAt(0).toUpperCase()+t.slice(1)+'</button>';
+      }).join('')+
+    '</div>'+
+    '<div id="mpBody" class="mp-body">'+signInBanner+'</div>';
+
+  renderMPTab();
+}
+function setMPTab(t){mpTab=t;renderMPTab();}
+function renderMPTab(){
+  var el=document.getElementById('mpBody');if(!el)return;
+  if(mpTab==='history') el.innerHTML=renderMPHistory();
+  else if(mpTab==='favorites') el.innerHTML=renderMPFavorites();
+  else if(mpTab==='friends') el.innerHTML=renderMPFriends();
+  else if(mpTab==='activity') el.innerHTML=renderMPActivity();
+  else el.innerHTML=renderMPCompare();
+  if(mpTab==='history') setTimeout(function(){drawMPCharts();},80);
+}
+function renderMPHistory(){
+  var ratedIds=Object.keys(ratings).filter(function(id){return ratings[id]>0;});
+  var seedIds=Object.keys(HIST);
+  var seen={};var allIds=[];
+  ratedIds.concat(seedIds).forEach(function(id){if(!seen[id]){seen[id]=1;allIds.push(id);}});
+  var filtered=allIds.filter(function(id){
+    if(profileFilter==='players') return id.indexOf('player_')===0;
+    if(profileFilter==='teams') return id.indexOf('team_')===0;
+    if(profileFilter==='refs') return id.indexOf('ref_')===0;
+    if(profileFilter==='broadcast') return id.indexOf('ann_')===0;
+    return true;
+  });
+  var filters=['all','players','teams','refs','broadcast'];
+  var pillsHTML='<div class="filter-row">'+filters.map(function(f){
+    return '<button class="fpill'+(profileFilter===f?' on':'')+'" onclick="setProfileFilter(\''+f+'\')">'+f.charAt(0).toUpperCase()+f.slice(1)+'</button>';
+  }).join('')+'</div>';
+  var html=pillsHTML;
+  filtered.forEach(function(id){
+    var hist=fullHist(id);if(!hist.length)return;
+    var myAvg=(hist.reduce(function(s,h){return s+h.myR;},0)/hist.length).toFixed(1);
+    var cid='pc_'+id.replace(/[^a-z0-9]/gi,'_');
+    var nm=id.match(/player_(?:home|away)_(.+)/);
+    var name=nm?nm[1].replace(/_/g,' '):(id.indexOf('team_')===0?(TEAM_NAMES[id.replace('team_','')]||id.replace('team_','')):(id.indexOf('ann_')===0?'Broadcaster':(id.indexOf('ref_')===0?'Official':id)));
+    var sub=nm?'Player':(id.indexOf('team_')===0?'Team':(id.indexOf('ann_')===0?'Broadcast':(id.indexOf('ref_')===0?'Referee':'')));
+    var logRows='';
+    var last3=hist.slice(-3).reverse();
+    last3.forEach(function(h){
+      var comment=h.comment?(' · "'+h.comment.slice(0,30)+(h.comment.length>30?'…':'')+'"'):'';
+      logRows+='<div class="mlog-row"><div style="color:var(--text2)"><span style="font-weight:500;color:var(--text)">'+h.game+'</span> <span style="color:var(--text3)">'+h.date+'</span>'+(h.comment?('<em style="color:var(--text3)"> · "'+h.comment.slice(0,30)+(h.comment.length>30?'…':'')+'"</em>'):'')+'</div><div style="font-weight:500;color:var(--gold);flex-shrink:0;margin-left:8px">'+fR(h.myR)+' ★</div></div>';
+    });
+    html+=
+      '<div class="hist-card">'+
+        '<div class="hc-top">'+
+          '<div><div class="hc-name">'+name+'</div><div class="hc-sub">'+sub+'</div></div>'+
+          '<div><div class="hc-avg">'+myAvg+' ★</div><div class="hc-cnt">'+hist.length+' game'+(hist.length>1?'s':'')+'</div></div>'+
+        '</div>'+
+        '<div class="chart-legend">'+
+          '<span><span class="ldot" style="background:#4a9eff"></span><span style="font-size:11px;color:var(--text3)">My rating</span></span>'+
+          '<span><span class="ldot" style="background:#f5a623"></span><span style="font-size:11px;color:var(--text3)">Community avg</span></span>'+
+        '</div>'+
+        '<div class="chart-box"><canvas id="'+cid+'"></canvas></div>'+
+        '<div style="font-size:11px;color:var(--text2)">'+logRows+'</div>'+
+      '</div>';
+  });
+  if(!filtered.length) html+='<p style="color:var(--text3);font-size:13px">No ratings in this category yet.</p>';
+  return html;
+}
+function drawMPCharts(){
+  var ratedIds=Object.keys(ratings).filter(function(id){return ratings[id]>0;});
+  var seedIds=Object.keys(HIST);
+  var seen={};var allIds=[];
+  ratedIds.concat(seedIds).forEach(function(id){if(!seen[id]){seen[id]=1;allIds.push(id);}});
+  allIds.forEach(function(id){
+    var cid='pc_'+id.replace(/[^a-z0-9]/gi,'_');
+    var hist=fullHist(id);if(hist.length<1)return;
+    var cv=document.getElementById(cid);if(!cv)return;
+    if(chartI[cid])chartI[cid].destroy();
+    chartI[cid]=new Chart(cv,{type:'line',data:{
+      labels:hist.map(function(h){return h.date;}),
+      datasets:[
+        {data:hist.map(function(h){return h.myR;}),borderColor:'#4a9eff',backgroundColor:'rgba(74,158,255,.1)',borderWidth:2,pointRadius:4,pointBackgroundColor:'#4a9eff',tension:.35,fill:true},
+        {data:hist.map(function(h){return h.commAvg;}),borderColor:'#f5a623',backgroundColor:'transparent',borderWidth:1.5,pointRadius:3,pointBackgroundColor:'#f5a623',tension:.35,borderDash:[4,3]}
+      ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{min:0,max:5,ticks:{stepSize:1,color:'rgba(255,255,255,.3)',font:{size:10}},grid:{color:'rgba(255,255,255,.06)'}},x:{ticks:{color:'rgba(255,255,255,.3)',font:{size:9},maxRotation:0,autoSkip:true,maxTicksLimit:4},grid:{display:false}}}}});
+  });
+}
+function setProfileFilter(f){profileFilter=f;renderMPTab();}
+function renderMPFavorites(){
+  var html='<div class="sec-lbl" style="margin-top:0">Favorite Teams</div>';
+  FAVTEAMS.forEach(function(abbr){
+    var comm=getComm('team_'+abbr);
+    var hist=fullHist('team_'+abbr);
+    var myAvg=hist.length>0?fR(hist.reduce(function(s,h){return s+h.myR;},0)/hist.length):'–';
+    html+=
+      '<div class="fav-row" onclick="openEntityProfile(\'team\',\''+abbr+'\')">'+
+        teamLogoHTML(abbr,30)+
+        '<div style="flex:1;margin-left:10px"><div class="fav-name">'+(TEAM_NAMES[abbr]||abbr)+'</div><div class="fav-sub">Community: '+comm.avg+' ★</div></div>'+
+        '<div class="fav-rating">'+myAvg+' ★</div>'+
+      '</div>';
+  });
+  html+='<div class="sec-lbl">Favorite Players</div>';
+  FAVPLAYERS.forEach(function(name){
+    var hk=Object.keys(HIST).find(function(k){return k.indexOf(name.replace(/ /g,'_'))>=0;});
+    var comm=getComm(hk||('player_x_'+name.replace(/ /g,'_')));
+    var hist=hk?fullHist(hk):[];
+    var myAvg=hist.length>0?fR(hist.reduce(function(s,h){return s+h.myR;},0)/hist.length):'–';
+    html+=
+      '<div class="fav-row" onclick="openEntityProfile(\'player\',\''+name.replace(/ /g,'_')+'\')">'+
+        playerImgHTML(name,30)+
+        '<div style="flex:1;margin-left:10px"><div class="fav-name">'+name+'</div><div class="fav-sub">Community: '+comm.avg+' ★</div></div>'+
+        '<div class="fav-rating">'+myAvg+' ★</div>'+
+      '</div>';
+  });
+  return html;
+}
+function renderMPFriends(){
+  var html='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><span style="font-size:13px;font-weight:500">Find friends</span><button class="hbtn" style="font-size:11px">Invite friends</button></div>';
+  FRIENDS.forEach(function(f){
+    html+=
+      '<div class="friend-row">'+
+        '<div class="friend-av">'+f.av+'</div>'+
+        '<div style="flex:1"><div class="friend-name">'+f.name+'</div><div class="friend-sub">'+f.handle+' · '+f.ratings+' ratings</div></div>'+
+        '<button class="friend-btn" onclick="toggleFollow(this)">'+( f.following?'Following':'Follow')+'</button>'+
+      '</div>';
+  });
+  return html;
+}
+function toggleFollow(btn){btn.textContent=btn.textContent==='Follow'?'Following':'Follow';}
+function renderMPActivity(){
+  var html='<div class="sec-lbl" style="margin-top:0">Friend activity</div>';
+  ACTIVITY.forEach(function(a){
+    var cs='';for(var n=1;n<=5;n++) cs+=sSVG(11,sF(a.val,n));
+    html+=
+      '<div class="activity-item">'+
+        '<div class="act-av">'+a.av+'</div>'+
+        '<div style="flex:1">'+
+          '<div class="act-text"><strong>'+a.user+'</strong> '+a.action+' <strong>'+a.entity+'</strong></div>'+
+          '<div style="display:inline-flex;align-items:center;gap:2px;margin-top:3px">'+cs+'<span style="font-size:10px;color:var(--text3);margin-left:3px">'+fR(a.val)+'</span></div>'+
+          '<div class="act-time">'+a.time+'</div>'+
+        '</div>'+
+      '</div>';
+  });
+  return html;
+}
+function renderMPCompare(){
+  var html='<div class="cmp-legend"><span><span class="cmp-dot" style="background:#4a9eff"></span><span style="font-size:11px;color:var(--text3)">You</span></span><span><span class="cmp-dot" style="background:#f5a623"></span><span style="font-size:11px;color:var(--text3)">Friend avg</span></span></div>';
+  COMPARE.forEach(function(c){
+    var diff=parseFloat((c.mine-c.theirs).toFixed(1));
+    var diffStr=diff>0?('+'+diff):diff;
+    var diffColor=Math.abs(diff)>1?'var(--red)':Math.abs(diff)>0.5?'var(--gold)':'var(--text3)';
+    html+=
+      '<div class="compare-row">'+
+        '<div style="flex:1"><div class="cmp-entity">'+c.entity+'</div><div class="cmp-sub">'+c.sub+'</div></div>'+
+        '<div class="cmp-ratings">'+
+          '<div><div class="cmp-mine">'+fR(c.mine)+' ★</div><div style="font-size:9px;color:var(--text3)">You</div></div>'+
+          '<div style="text-align:center"><div style="font-size:12px;color:'+diffColor+';font-weight:600">'+diffStr+'</div><div style="font-size:9px;color:var(--text3)">diff</div></div>'+
+          '<div style="text-align:right"><div class="cmp-theirs">'+fR(c.theirs)+' ★</div><div style="font-size:9px;color:var(--text3)">'+c.friend.split(' ')[0]+'</div></div>'+
+        '</div>'+
+      '</div>';
+  });
+  return html;
+}
+
+// ── MISC ──
+function doLogin(){
+  loggedIn=true;
+  var active=document.querySelector('.scr.on');
+  var id=active?active.id:'scr-games';
+  if(id==='scr-games') showGamesScreen();
+  else if(id==='scr-profile') renderMPScreen();
+  else if(id==='scr-detail'&&activeGame){var t=document.querySelector('.dtab.on');if(t)t.click();}
+  closeD();
+}
+function rerender(){
+  if(activeGame){var t=document.querySelector('.dtab.on');if(t)t.click();}
+}
+function submitRatings(){
+  var c=Object.keys(ratings).filter(function(id){return ratings[id]>0;}).length;
+  if(!c){alert('Rate at least one item first!');return;}
+  document.querySelectorAll('.sbtn').forEach(function(b){b.textContent='Submitted ✓ ('+c+' rated)';b.disabled=true;});
+}
+
+// ── INIT ──
+showGamesScreen();
+</script>
+</body>
+</html>
