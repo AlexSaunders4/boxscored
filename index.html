@@ -359,176 +359,258 @@ function teamLogoHTML(abbr,sz){
   var nbaId=NBA_TEAMS[abbr];
   var color=TEAM_COLORS[abbr]||'#555';
   var label=abbr.replace('_NFL','').replace('_NHL','').replace('_MLB','');
+  var fallback='<div style="width:'+sz+'px;height:'+sz+'px;border-radius:6px;background:'+color+';display:flex;align-items:center;justify-content:center;font-size:'+Math.floor(sz*.28)+'px;font-weight:700;color:#fff">'+label+'</div>';
   if(nbaId){
-    return '<img src="https://cdn.nba.com/logos/nba/'+nbaId+'/primary/L/logo.svg" width="'+sz+'" height="'+sz+'" style="object-fit:contain" onerror="this.outerHTML=\'<div style=\\\"width:'+sz+'px;height:'+sz+'px;border-radius:50%;background:'+color+';display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed,sans-serif;font-size:'+Math.floor(sz*.28)+'px;font-weight:700;color:#fff\\\">'+(label)+'</div>\' alt="">';
+    return '<img src="https://cdn.nba.com/logos/nba/'+nbaId+'/primary/L/logo.svg" width="'+sz+'" height="'+sz+'" style="object-fit:contain" onerror="this.parentNode.innerHTML=this.nextSibling.outerHTML" alt="">'+fallback;
   }
-  return '<div style="width:'+sz+'px;height:'+sz+'px;border-radius:6px;background:'+color+';display:flex;align-items:center;justify-content:center;font-family:\'Barlow Condensed\',sans-serif;font-size:'+Math.floor(sz*.28)+'px;font-weight:700;color:#fff">'+label+'</div>';
+  return fallback;
 }
 function playerImgHTML(name,sz){
   var ids={'Austin Reaves':1630559,'Luka Doncic':1629029,'Marcus Smart':203935,'Deandre Ayton':1629028,'Rui Hachimura':1629060,'Jaxson Hayes':1629637,'Luke Kennard':1628384,'Aaron Gordon':203932,'Nikola Jokic':203999,'Tim Hardaway Jr.':203501,'Cameron Johnson':1629661,'Christian Braun':1631096,'Bruce Brown':1628971,'Jamal Murray':1627750,'Spencer Jones':1641785,'Jayson Tatum':1628369,'Jaylen Brown':1627759,'Jrue Holiday':203200,'Al Horford':201143,'Kristaps Porzingis':204001,'Payton Pritchard':1630202,'Trae Young':1629029,'Giannis Antetokounmpo':203507,'Damian Lillard':203081,'Shai Gilgeous-Alexander':1628983,'Ja Morant':1629630,'Tyrese Haliburton':1630169,'Pascal Siakam':1626169};
   var pid=ids[name];
   var initials=name.split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase();
+  var fallback='<div style="width:'+sz+'px;height:'+sz+'px;border-radius:50%;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:'+Math.floor(sz*.32)+'px;font-weight:600;color:var(--text3)">'+initials+'</div>';
   if(pid){
-    return '<img src="https://cdn.nba.com/headshots/nba/latest/260x190/'+pid+'.png" width="'+sz+'" height="'+sz+'" style="border-radius:50%;object-fit:cover;object-position:top center;background:var(--bg4)" onerror="this.outerHTML=\'<div style=\\\"width:'+sz+'px;height:'+sz+'px;border-radius:50%;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:'+Math.floor(sz*.32)+'px;font-weight:600;color:var(--text3)\\\">'+initials+'</div>\' alt="">';
+    return '<img src="https://cdn.nba.com/headshots/nba/latest/260x190/'+pid+'.png" width="'+sz+'" height="'+sz+'" style="border-radius:50%;object-fit:cover;object-position:top center;background:var(--bg4)" onerror="this.parentNode.innerHTML=this.nextSibling.outerHTML" alt="">'+fallback;
   }
-  return '<div style="width:'+sz+'px;height:'+sz+'px;border-radius:50%;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:'+Math.floor(sz*.32)+'px;font-weight:600;color:var(--text3)">'+initials+'</div>';
+  return fallback;
 }
-
-// ── GAME DATA ──
 function mkP(defs){return defs.map(function(d){return {name:d[0],pos:d[1],min:d[2],pts:d[3],fg:d[4],tp:d[5],ft:d[6],reb:d[7],ast:d[8],to:d[9],stl:d[10],blk:d[11],oreb:d[12],dreb:d[13],pf:d[14],pm:d[15],td:d[16]||false};});}
 
-var WEEK=[
-  {day:'Mon Mar 10',games:[
-    {id:'m10g1',league:'NBA',away:'PHX',home:'GSW',awayScore:108,homeScore:114,time:'7:00 PM'},
-    {id:'m10g2',league:'NBA',away:'MEM',home:'OKC',awayScore:99,homeScore:121,time:'8:00 PM'},
-    {id:'m10g3',league:'NBA',away:'UTA',home:'LAL',awayScore:103,homeScore:117,time:'10:30 PM'},
-    {id:'m10g4',league:'NFL',away:'KC',home:'BUF',awayScore:27,homeScore:24,time:'8:20 PM'},
-    {id:'m10g5',league:'NHL',away:'EDM',home:'TBL',awayScore:4,homeScore:2,time:'7:00 PM'},
-    {id:'m10g6',league:'EPL',away:'ARS',home:'MCI',awayScore:1,homeScore:2,time:'12:30 PM'}
-  ]},
-  {day:'Tue Mar 11',games:[
-    {id:'t11g1',league:'NBA',away:'DET',home:'MIL',awayScore:111,homeScore:128,time:'7:00 PM'},
-    {id:'t11g2',league:'NBA',away:'ATL',home:'BOS',awayScore:104,homeScore:119,time:'7:30 PM'},
-    {id:'t11g3',league:'NBA',away:'MIN',home:'DAL',awayScore:112,homeScore:109,time:'8:30 PM'},
-    {id:'t11g4',league:'NBA',away:'NYK',home:'LAC',awayScore:118,homeScore:110,time:'10:00 PM'},
-    {id:'t11g5',league:'MLB',away:'NYY',home:'LAD',awayScore:3,homeScore:5,time:'7:10 PM'},
-    {id:'t11g6',league:'EPL',away:'LIV',home:'CHE',awayScore:2,homeScore:1,time:'3:00 PM'}
-  ]},
-  {day:'Wed Mar 12',games:[
-    {id:'w12g1',league:'NBA',away:'CLE',home:'MIA',awayScore:109,homeScore:104,time:'7:30 PM'},
-    {id:'w12g2',league:'NBA',away:'IND',home:'CHI',awayScore:124,homeScore:118,time:'8:00 PM'},
-    {id:'w12g3',league:'NBA',away:'SAS',home:'DEN',awayScore:101,homeScore:115,time:'9:00 PM'},
-    {id:'w12g4',league:'NHL',away:'COL',home:'NYR',awayScore:3,homeScore:2,time:'7:00 PM'},
-    {id:'w12g5',league:'NFL',away:'SF',home:'LAR',awayScore:20,homeScore:17,time:'8:20 PM'}
-  ]},
-  {day:'Thu Mar 13',games:[
-    {id:'h13g1',league:'NBA',away:'POR',home:'PHI',awayScore:96,homeScore:108,time:'7:00 PM'},
-    {id:'h13g2',league:'NBA',away:'BKN',home:'TOR',awayScore:97,homeScore:112,time:'7:30 PM'},
-    {id:'h13g3',league:'NBA',away:'NOP',home:'HOU',awayScore:110,homeScore:106,time:'8:00 PM'},
-    {id:'h13g4',league:'NBA',away:'SAC',home:'GSW',awayScore:107,homeScore:113,time:'10:00 PM'},
-    {id:'h13g5',league:'MLB',away:'ATL_MLB',home:'NYM',awayScore:4,homeScore:6,time:'7:10 PM'},
-    {id:'h13g6',league:'EPL',away:'MUN',home:'TOT',awayScore:0,homeScore:2,time:'12:30 PM'}
-  ]},
-  {day:'Fri Mar 14',games:[
-    {id:'f14g1',league:'NBA',away:'SAS',home:'CHA',awayScore:102,homeScore:115,time:'3:30 PM'},
-    {id:'f14g2',league:'NBA',away:'WAS',home:'BOS',awayScore:100,homeScore:111,time:'6:00 PM'},
-    {id:'f14g3',league:'NBA',away:'ORL',home:'MIA',awayScore:121,homeScore:117,time:'8:00 PM'},
-    {id:'f14g4',league:'NBA',away:'DEN',home:'LAL',awayScore:125,homeScore:127,time:'8:30 PM'},
-    {id:'f14g5',league:'NBA',away:'SAC',home:'LAC',awayScore:118,homeScore:109,time:'10:30 PM'},
-    {id:'f14g6',league:'NHL',away:'BOS_NHL',home:'VGK',awayScore:2,homeScore:4,time:'10:00 PM'},
-    {id:'f14g7',league:'NFL',away:'GB',home:'DET_NFL',awayScore:17,homeScore:24,time:'8:15 PM'}
-  ]},
-  {day:'Sat Mar 15',games:[
-    {id:'s15g1',league:'NBA',away:'OKC',home:'MIN',awayScore:116,homeScore:103,time:'1:00 PM'},
-    {id:'s15g2',league:'NBA',away:'DET',home:'TOR',awayScore:108,homeScore:119,time:'3:30 PM'},
-    {id:'s15g3',league:'NBA',away:'IND',home:'MIL',awayScore:123,homeScore:134,time:'3:30 PM'},
-    {id:'s15g4',league:'NBA',away:'DAL',home:'CLE',awayScore:130,homeScore:120,time:'3:30 PM'},
-    {id:'s15g5',league:'NBA',away:'GSW',home:'NYK',awayScore:107,homeScore:110,time:'8:00 PM'},
-    {id:'s15g6',league:'NBA',away:'UTA',home:'SAC',awayScore:111,homeScore:116,time:'10:00 PM'},
-    {id:'s15g7',league:'NFL',away:'PHI_NFL',home:'DAL_NFL',awayScore:28,homeScore:21,time:'4:25 PM'},
-    {id:'s15g8',league:'EPL',away:'TOT',home:'LIV',awayScore:1,homeScore:3,time:'7:45 PM'},
-    {id:'s15g9',league:'MLB',away:'HOU_MLB',home:'NYY',awayScore:2,homeScore:7,time:'1:05 PM'}
-  ]},
-  {day:'Sun Mar 16',games:[
-    {id:'u16g1',league:'NBA',away:'ORL',home:'ATL',awayScore:112,homeScore:124,time:'7:00 PM'},
-    {id:'u16g2',league:'NBA',away:'PHX',home:'BOS',awayScore:112,homeScore:120,time:'7:30 PM'},
-    {id:'u16g3',league:'NBA',away:'DAL',home:'NOP',awayScore:111,homeScore:129,time:'8:00 PM'},
-    {id:'u16g4',league:'NBA',away:'MEM',home:'CHI',awayScore:107,homeScore:132,time:'8:00 PM'},
-    {id:'u16g5',league:'NBA',away:'LAL',home:'HOU',awayScore:100,homeScore:92,time:'9:30 PM'},
-    {id:'u16g6',league:'NHL',away:'TBL',home:'EDM',awayScore:1,homeScore:3,time:'9:00 PM'},
-    {id:'u16g7',league:'EPL',away:'CHE',home:'ARS',awayScore:0,homeScore:1,time:'4:30 PM'},
-    {id:'u16g8',league:'MLB',away:'LAD',home:'ATL_MLB',awayScore:5,homeScore:3,time:'4:05 PM'}
-  ]}
-];
+// ── SUPABASE CONFIG ──
+var SUPABASE_URL = 'https://tlgbwbnaireajoktwvnf.supabase.co';
+var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRsZ2J3Ym5haXJlYWpva3R3dm5mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4MDAwMTYsImV4cCI6MjA4OTM3NjAxNn0.lTEIKrHjrnkuZkLhIZ-Vc0W4k_CeojtzfV6IT1fnH5o';
 
-var GAME_DETAILS={
-  'f14g4':{
-    teamStats:{DEN:{pts:125,fgPct:'46.3%',tpPct:'38.8%',ftPct:'81.8%',reb:41,ast:33,stl:13,blk:5,to:16,pip:44,fastBreak:25,bench:39,lead:8},LAL:{pts:127,fgPct:'51.6%',tpPct:'33.3%',ftPct:'65.4%',reb:46,ast:31,stl:10,blk:6,to:17,pip:56,fastBreak:15,bench:18,lead:17}},
-    homeCoach:'JJ Redick',awayCoach:'David Adelman',
-    homePlayers:mkP([['Austin Reaves','G',36,32,'12-21','3-8','5-6',7,6,3,1,1,1,6,3,7],['Luka Doncic','G',38,30,'10-26','4-14','6-9',11,13,6,1,3,0,11,3,-4,true],['Marcus Smart','F',34,21,'8-15','5-12','0-0',3,2,0,5,1,1,2,2,16],['Deandre Ayton','C',28,9,'4-6','0-0','1-4',9,2,2,0,1,4,5,3,1],['Rui Hachimura','F',22,6,'3-6','0-3','0-0',4,0,0,0,0,1,3,2,-8],['Jaxson Hayes','C',18,5,'1-2','0-0','3-4',4,0,0,1,0,0,4,4,-2],['Luke Kennard','G',14,3,'1-2','1-2','0-0',1,2,0,0,0,0,1,0,-9]]),
-    awayPlayers:mkP([['Aaron Gordon','F',36,27,'9-16','5-10','4-7',5,2,3,0,2,2,3,1,-3],['Nikola Jokic','C',38,24,'10-19','2-6','2-2',16,14,4,5,1,2,14,2,6,true],['Tim Hardaway Jr.','G',32,20,'6-13','4-10','4-4',1,3,1,2,0,0,1,1,2],['Cameron Johnson','F',34,18,'6-13','4-10','2-2',4,3,2,1,1,0,4,5,15],['Christian Braun','G',26,12,'5-9','0-2','2-2',1,3,1,1,0,0,1,3,-6],['Bruce Brown','G',22,12,'4-6','2-3','2-2',4,2,0,1,1,0,4,0,-5],['Jamal Murray','G',34,5,'1-14','1-7','2-3',6,6,2,2,0,1,5,6,-9],['Spencer Jones','F',18,5,'2-4','1-1','0-0',3,0,0,1,0,2,1,4,-2]]),
-    announcers:[{name:'Mike Breen',role:'Play-by-play'},{name:'Jeff Van Gundy',role:'Color analyst'},{name:'Doris Burke',role:'Sideline'}],
-    refs:[{name:'Scott Foster',role:'Crew chief'},{name:'Marc Davis',role:'Referee'},{name:'Rodney Mott',role:'Referee'}]
-  },
-  't11g2':{
-    teamStats:{ATL:{pts:104,fgPct:'44.1%',tpPct:'35.2%',ftPct:'72.0%',reb:38,ast:24,stl:7,blk:3,to:14,pip:42,fastBreak:12,bench:28,lead:6},BOS:{pts:119,fgPct:'50.3%',tpPct:'42.1%',ftPct:'80.0%',reb:44,ast:30,stl:9,blk:5,to:11,pip:48,fastBreak:20,bench:32,lead:22}},
-    homeCoach:'Joe Mazzulla',awayCoach:'Quin Snyder',
-    homePlayers:mkP([['Jayson Tatum','F',37,31,'11-22','4-9','5-6',8,6,3,2,1,1,7,3,18],['Jaylen Brown','G',35,26,'10-19','3-7','3-4',5,4,2,1,1,0,5,2,14],['Jrue Holiday','G',34,18,'7-14','2-5','2-2',4,7,1,3,1,0,4,2,12],['Al Horford','C',28,12,'5-9','2-4','0-0',7,3,1,1,2,2,5,2,10],['Kristaps Porzingis','C',22,14,'5-8','1-3','3-4',5,1,1,0,1,1,4,3,8],['Payton Pritchard','G',18,11,'4-7','3-5','0-0',2,3,0,1,0,0,2,1,5]]),
-    awayPlayers:mkP([['Trae Young','G',36,22,'8-20','2-7','4-5',2,9,4,1,0,0,2,3,-14],['Dejounte Murray','G',34,18,'7-16','2-6','2-2',5,5,3,2,0,1,4,2,-10],['De Andre Hunter','F',30,16,'6-11','2-4','2-2',4,2,2,1,0,1,3,2,-8],['Clint Capela','C',26,14,'6-9','0-0','2-4',10,1,1,0,2,4,6,3,-12],['Bogdan Bogdanovic','G',28,12,'4-10','3-6','1-1',2,2,2,1,0,0,2,1,-6]]),
-    announcers:[{name:'Kevin Harlan',role:'Play-by-play'},{name:'Reggie Miller',role:'Color analyst'},{name:'Allie LaForce',role:'Sideline'}],
-    refs:[{name:'Tony Brothers',role:'Crew chief'},{name:'John Goble',role:'Referee'},{name:'Kevin Scott',role:'Referee'}]
-  },
-  's15g3':{
-    teamStats:{IND:{pts:123,fgPct:'48.2%',tpPct:'39.1%',ftPct:'78.0%',reb:40,ast:28,stl:8,blk:3,to:13,pip:44,fastBreak:18,bench:34,lead:10},MIL:{pts:134,fgPct:'53.4%',tpPct:'44.2%',ftPct:'75.0%',reb:46,ast:36,stl:10,blk:5,to:12,pip:56,fastBreak:22,bench:38,lead:18}},
-    homeCoach:'Doc Rivers',awayCoach:'Rick Carlisle',
-    homePlayers:mkP([['Giannis Antetokounmpo','F',36,38,'14-22','1-3','9-12',12,8,3,2,2,4,8,3,14],['Damian Lillard','G',35,28,'10-21','4-9','4-5',4,8,3,1,0,0,4,2,10],['Brook Lopez','C',28,18,'7-11','3-5','1-1',7,2,1,0,2,2,5,2,8],['Khris Middleton','F',30,16,'6-12','2-5','2-2',5,4,2,1,0,1,4,2,6],['Bobby Portis','C',22,14,'5-8','2-4','2-2',6,2,1,0,1,2,4,2,4],['MarJon Beauchamp','F',16,8,'3-6','1-3','1-2',3,1,0,0,0,1,2,1,0]]),
-    awayPlayers:mkP([['Tyrese Haliburton','G',36,26,'9-19','4-8','4-5',4,10,3,2,0,0,4,3,-12,true],['Pascal Siakam','F',34,24,'9-16','2-5','4-5',8,5,2,1,1,2,6,3,-8],['Myles Turner','C',28,18,'7-11','2-4','2-2',8,2,1,0,2,2,6,2,-6],['Andrew Nembhard','G',30,16,'6-12','3-6','1-1',3,6,2,2,0,0,3,2,-4],['Bennedict Mathurin','G',20,14,'5-9','2-4','2-2',3,2,1,1,0,0,3,1,0]]),
-    announcers:[{name:'Mike Breen',role:'Play-by-play'},{name:'Mark Jackson',role:'Color analyst'},{name:'Lisa Salters',role:'Sideline'}],
-    refs:[{name:'Eric Lewis',role:'Crew chief'},{name:'Zach Zarba',role:'Referee'},{name:'Curtis Blair',role:'Referee'}]
+// ── SUPABASE FETCH HELPER ──
+function sbFetch(table, params) {
+  return fetch(SUPABASE_URL + '/rest/v1/' + table + '?' + params, {
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: 'Bearer ' + SUPABASE_KEY,
+    }
+  }).then(function(r) { return r.json(); });
+}
+
+// ── LIVE DATA CACHE ──
+var dbGames = [];          // all games from Supabase
+var dbBoxScores = {};      // game detail cache keyed by espn_id
+var dataLoaded = false;
+var dataLoading = false;
+
+// Format a date as YYYY-MM-DD in Eastern time
+function todayET() {
+  return new Date().toLocaleDateString('en-CA', {timeZone:'America/New_York'});
+}
+
+// Get the 7 days around today
+function getWeekDates() {
+  var dates = [];
+  var now = new Date(new Date().toLocaleString('en-US', {timeZone:'America/New_York'}));
+  for (var i = -3; i <= 6; i++) {
+    var d = new Date(now);
+    d.setDate(d.getDate() + i);
+    dates.push(d.toLocaleDateString('en-CA'));
   }
-};
+  return dates;
+}
 
-function getDetail(gid){
-  if(GAME_DETAILS[gid]) return GAME_DETAILS[gid];
-  var g=allGames().find(function(x){return x.id===gid;});
-  if(!g) return null;
+// Load all games for the past 3 days + next 6 days
+function loadGames(callback) {
+  if (dataLoading) return;
+  dataLoading = true;
+  var dates = getWeekDates();
+  var startDate = dates[0];
+  var endDate = dates[dates.length - 1];
+  var params = 'game_date=gte.' + startDate + '&game_date=lte.' + endDate + '&order=start_time.asc&limit=200';
+  sbFetch('games', params).then(function(rows) {
+    dbGames = rows || [];
+    dataLoaded = true;
+    dataLoading = false;
+    if (callback) callback();
+  }).catch(function(e) {
+    console.error('Failed to load games:', e);
+    dataLoading = false;
+    dataLoaded = true;
+    if (callback) callback();
+  });
+}
+
+// Load box score for a specific game
+function loadBoxScore(espnId, sport, callback) {
+  if (dbBoxScores[espnId]) { callback(dbBoxScores[espnId]); return; }
+  var table = sportToTable(sport);
+  if (!table) { callback(null); return; }
+  sbFetch(table, 'espn_game_id=eq.' + espnId + '&limit=30').then(function(rows) {
+    dbBoxScores[espnId] = rows || [];
+    callback(dbBoxScores[espnId]);
+  }).catch(function() { callback(null); });
+}
+
+function sportToTable(sport) {
+  var map = {basketball:'box_basketball', football:'box_football_skill', baseball:'box_baseball_batting', hockey:'box_hockey_skaters', soccer:'box_soccer'};
+  return map[sport] || null;
+}
+
+// Convert a DB game row to the format the app expects
+function dbGameToApp(row) {
+  var startLocal = new Date(row.start_time);
+  var timeStr = startLocal.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit', timeZone:'America/New_York', hour12:true});
   return {
-    teamStats:{},homeCoach:'Head Coach',awayCoach:'Head Coach',
-    homePlayers:mkP([['Player A','G',34,22,'8-17','3-7','3-4',5,5,2,1,0,1,4,2,10],['Player B','F',32,18,'7-14','2-5','2-3',7,3,2,1,1,2,5,2,6],['Player C','C',28,14,'5-9','0-2','4-5',9,2,1,0,2,3,6,2,4],['Player D','G',26,12,'4-10','3-6','1-1',3,4,1,1,0,0,3,2,2],['Player E','F',22,10,'4-8','2-4','0-0',4,2,2,0,0,1,3,1,-2]]),
-    awayPlayers:mkP([['Player F','G',34,20,'7-16','3-7','3-4',4,6,2,2,0,0,4,2,-8],['Player G','F',32,16,'6-13','2-5','2-3',6,3,2,1,1,2,4,2,-6],['Player H','C',28,14,'5-9','0-2','4-5',8,2,1,0,2,3,5,2,-4],['Player I','G',26,12,'4-10','3-6','1-1',2,5,1,1,0,0,2,2,-2],['Player J','F',22,10,'4-8','2-4','0-0',4,2,2,0,0,1,3,1,0]]),
-    announcers:[{name:'Announcer 1',role:'Play-by-play'},{name:'Announcer 2',role:'Color analyst'}],
-    refs:[{name:'Official 1',role:'Crew chief'},{name:'Official 2',role:'Referee'},{name:'Official 3',role:'Referee'}]
+    id:         row.espn_id,
+    espn_id:    row.espn_id,
+    league:     row.league,
+    sport:      row.sport,
+    away:       row.away_abbr || row.away_team,
+    awayFull:   row.away_team,
+    home:       row.home_abbr || row.home_team,
+    homeFull:   row.home_team,
+    awayScore:  row.away_score,
+    homeScore:  row.home_score,
+    status:     row.status,
+    time:       timeStr,
+    date:       row.game_date,
+    period:     row.period || '',
+    clock:      row.clock || '',
+    venue:      row.venue || '',
+    awayRecord: row.away_record || '',
+    homeRecord: row.home_record || '',
   };
 }
 
-// community data
-var CC={};
-function getComm(id){
-  if(CC[id]) return CC[id];
-  var avg=3.5;
-  if(/Jokic|Giannis|Tatum|Gilgeous|Reaves|Gordon|Haliburton/.test(id)) avg=4.4;
-  if(/Murray_Jamal|Morant/.test(id)) avg=2.1;
-  if(/team_LAL|team_BOS|team_OKC|team_MIL/.test(id)) avg=4.0;
-  if(/ref_0|Foster/.test(id)) avg=2.3;
-  if(/ann_0|Breen|Harlan/.test(id)) avg=4.7;
-  var dist=new Array(10).fill(0);
-  var n=Math.floor(Math.random()*60)+30;
-  for(var i=0;i<n;i++){var v=avg+(Math.random()-.5)*2.5;v=Math.max(.5,Math.min(5,v));dist[Math.round(v*2)-1]++;}
-  var total=dist.reduce(function(a,b){return a+b;},0);
-  var wavg=total>0?(dist.reduce(function(s,v,i){return s+v*(i+1)*.5;},0)/total):avg;
-  var nm=id.match(/player_(?:home|away)_(.+)/);
-  var name=nm?nm[1].replace(/_/g,' '):id;
-  var n2=name.split(' ').pop();
-  var hi=avg>=4,lo=avg<3;
-  var comments=hi?[{u:'HoopHead',r:Math.min(5,avg+.5),t:n2+' was absolutely on it tonight.'},{u:'StatNerd',r:avg,t:'Efficient all night. Numbers back it up.'}]:lo?[{u:'RealTalk',r:avg,t:n2+' was disappointing. Needs to step up.'},{u:'Watcher',r:Math.max(.5,avg-.5),t:'Off night. Hopefully just a blip.'}]:[{u:'BalancedView',r:avg,t:'Solid from '+n2+'. Steady as ever.'},{u:'BoxScorePro',r:avg+.5,t:'Had some nice moments overall.'}];
-  CC[id]={dist:dist,avg:parseFloat(wavg.toFixed(1)),comments:comments};
+// Get all games for a given date string (YYYY-MM-DD)
+function getGamesForDate(dateStr) {
+  return dbGames.filter(function(g) { return g.game_date === dateStr; }).map(dbGameToApp);
+}
+
+// Get unique dates that have games
+function getDatesWithGames() {
+  var seen = {};
+  var dates = [];
+  dbGames.forEach(function(g) {
+    if (!seen[g.game_date]) { seen[g.game_date] = true; dates.push(g.game_date); }
+  });
+  return dates.sort();
+}
+
+// Format YYYY-MM-DD as display label like "Tue Mar 18"
+function formatDateLabel(dateStr) {
+  var d = new Date(dateStr + 'T12:00:00');
+  return d.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'});
+}
+
+// Get a single game by espn_id
+function getGame(id) {
+  var row = dbGames.find(function(g) { return g.espn_id === id; });
+  return row ? dbGameToApp(row) : null;
+}
+
+function allGames() {
+  return dbGames.map(dbGameToApp);
+}
+
+// Convert DB basketball rows to player format app expects
+function dbPlayersToApp(rows, side, teamAbbr) {
+  return (rows || []).filter(function(r) { return r.team_abbr === teamAbbr; }).map(function(r) {
+    return {
+      name:  r.player_name,
+      pos:   r.position || '',
+      min:   r.min || '0',
+      pts:   r.pts || 0,
+      fg:    (r.fg_made || 0) + '-' + (r.fg_att || 0),
+      tp:    (r.tp_made || 0) + '-' + (r.tp_att || 0),
+      ft:    (r.ft_made || 0) + '-' + (r.ft_att || 0),
+      reb:   r.reb || 0,
+      ast:   r.ast || 0,
+      to:    r.to_val || 0,
+      stl:   r.stl || 0,
+      blk:   r.blk || 0,
+      oreb:  r.oreb || 0,
+      dreb:  r.dreb || 0,
+      pf:    r.pf || 0,
+      pm:    r.pm || 0,
+      td:    (r.reb >= 10 && r.ast >= 10) || (r.pts >= 10 && r.reb >= 10) || (r.pts >= 10 && r.ast >= 10),
+    };
+  });
+}
+
+// ── GAME DETAILS (now loads from DB) ──
+var GAME_DETAILS_CACHE = {};
+
+function getDetail(gid) {
+  // Return cached version if we have it
+  if (GAME_DETAILS_CACHE[gid]) return GAME_DETAILS_CACHE[gid];
+  var g = getGame(gid);
+  if (!g) return null;
+  // Return a stub — real data loads async via loadDetailAsync
+  return {
+    teamStats: {},
+    homeCoach: 'Head Coach', awayCoach: 'Head Coach',
+    homePlayers: [], awayPlayers: [],
+    announcers: [{name:'Broadcaster',role:'Play-by-play'},{name:'Color Analyst',role:'Color analyst'}],
+    refs: [{name:'Crew Chief',role:'Crew chief'},{name:'Official 2',role:'Referee'},{name:'Official 3',role:'Referee'}],
+    loaded: false,
+  };
+}
+
+function loadDetailAsync(gid, callback) {
+  var g = getGame(gid);
+  if (!g) { callback(null); return; }
+  if (GAME_DETAILS_CACHE[gid] && GAME_DETAILS_CACHE[gid].loaded) { callback(GAME_DETAILS_CACHE[gid]); return; }
+  loadBoxScore(g.espn_id, g.sport, function(rows) {
+    var detail = {
+      teamStats: {},
+      homeCoach: 'Head Coach', awayCoach: 'Head Coach',
+      homePlayers: rows ? dbPlayersToApp(rows, 'home', g.home) : [],
+      awayPlayers: rows ? dbPlayersToApp(rows, 'away', g.away) : [],
+      announcers: [{name:'Broadcaster',role:'Play-by-play'},{name:'Color Analyst',role:'Color analyst'}],
+      refs: [{name:'Crew Chief',role:'Crew chief'},{name:'Official 2',role:'Referee'},{name:'Official 3',role:'Referee'}],
+      loaded: true,
+    };
+    GAME_DETAILS_CACHE[gid] = detail;
+    callback(detail);
+  });
+}
+
+// ── COMMUNITY DATA (generated, not from DB yet) ──
+var CC = {};
+function getComm(id) {
+  if (CC[id]) return CC[id];
+  var avg = 3.5;
+  if (/Jokic|Giannis|Tatum|Gilgeous|Reaves|Gordon|Haliburton/.test(id)) avg = 4.4;
+  if (/Murray_Jamal|Morant/.test(id)) avg = 2.1;
+  if (/team_LAL|team_BOS|team_OKC|team_MIL/.test(id)) avg = 4.0;
+  if (/ref_0|Foster/.test(id)) avg = 2.3;
+  if (/ann_0|Breen|Harlan/.test(id)) avg = 4.7;
+  var dist = new Array(10).fill(0);
+  var n = Math.floor(Math.random() * 60) + 30;
+  for (var i = 0; i < n; i++) { var v = avg + (Math.random() - .5) * 2.5; v = Math.max(.5, Math.min(5, v)); dist[Math.round(v * 2) - 1]++; }
+  var total = dist.reduce(function(a, b) { return a + b; }, 0);
+  var wavg = total > 0 ? (dist.reduce(function(s, v, i) { return s + v * (i + 1) * .5; }, 0) / total) : avg;
+  var nm = id.match(/player_(?:home|away)_(.+)/);
+  var name = nm ? nm[1].replace(/_/g, ' ') : id;
+  var n2 = name.split(' ').pop();
+  var hi = avg >= 4, lo = avg < 3;
+  var comments = hi ? [{u:'HoopHead',r:Math.min(5,avg+.5),t:n2+' was absolutely on it tonight.'},{u:'StatNerd',r:avg,t:'Efficient all night. Numbers back it up.'}] : lo ? [{u:'RealTalk',r:avg,t:n2+' was disappointing. Needs to step up.'},{u:'Watcher',r:Math.max(.5,avg-.5),t:'Off night. Hopefully just a blip.'}] : [{u:'BalancedView',r:avg,t:'Solid from '+n2+'. Steady as ever.'},{u:'BoxScorePro',r:avg+.5,t:'Had some nice moments overall.'}];
+  CC[id] = {dist:dist, avg:parseFloat(wavg.toFixed(1)), comments:comments};
   return CC[id];
 }
 
-// history
-var HIST={
-  'player_home_Austin_Reaves':[{date:'Dec 5',game:'vs GSW',myR:3.5,commAvg:3.8,comment:'Quiet 2nd half'},{date:'Jan 22',game:'vs DEN',myR:4.5,commAvg:4.1,comment:'Big 4th quarter'},{date:'Feb 19',game:'vs OKC',myR:4,commAvg:4.0,comment:''},{date:'Mar 1',game:'@ NYK',myR:4.5,commAvg:4.3,comment:''},{date:'Mar 14',game:'vs DEN',myR:5,commAvg:4.7,comment:"Best game I've seen from him"}],
-  'player_away_Nikola_Jokic':[{date:'Dec 2',game:'vs LAL',myR:5,commAvg:4.9,comment:'Untouchable'},{date:'Jan 5',game:'vs OKC',myR:5,commAvg:4.8,comment:'TD again'},{date:'Jan 20',game:'@ PHX',myR:4,commAvg:4.3,comment:'Off night'},{date:'Feb 8',game:'vs MIN',myR:5,commAvg:4.9,comment:''},{date:'Mar 14',game:'@ LAL',myR:4.5,commAvg:4.8,comment:'TD but team lost'}],
-  'player_away_Jamal_Murray':[{date:'Dec 2',game:'vs LAL',myR:4,commAvg:3.8,comment:''},{date:'Jan 5',game:'vs OKC',myR:3.5,commAvg:3.6,comment:''},{date:'Feb 8',game:'vs MIN',myR:4,commAvg:3.9,comment:''},{date:'Mar 14',game:'@ LAL',myR:1,commAvg:1.8,comment:'1-14. Inexcusable.'}],
-  'player_home_Jayson_Tatum':[{date:'Dec 10',game:'@ MIA',myR:4,commAvg:4.1,comment:''},{date:'Jan 15',game:'vs MIL',myR:4.5,commAvg:4.3,comment:'Clutch'},{date:'Feb 22',game:'vs PHI',myR:4.5,commAvg:4.4,comment:''},{date:'Mar 11',game:'vs ATL',myR:5,commAvg:4.6,comment:'Dominant start to finish'}],
-  'player_home_Giannis_Antetokounmpo':[{date:'Dec 8',game:'vs CHI',myR:5,commAvg:4.8,comment:''},{date:'Jan 12',game:'@ CLE',myR:4.5,commAvg:4.5,comment:''},{date:'Feb 18',game:'vs BOS',myR:4,commAvg:4.3,comment:''},{date:'Mar 15',game:'vs IND',myR:5,commAvg:4.9,comment:'38 points. Unstoppable.'}],
-  'team_LAL':[{date:'Dec 10',game:'vs PHX',myR:3.5,commAvg:3.6,comment:''},{date:'Jan 28',game:'vs BOS',myR:4,commAvg:3.9,comment:''},{date:'Mar 14',game:'vs DEN',myR:4.5,commAvg:4.2,comment:'Clutch 4th quarter'}],
-  'ann_0':[{date:'Dec 2',game:'DEN@LAL',myR:5,commAvg:4.8,comment:''},{date:'Mar 11',game:'ATL@BOS',myR:5,commAvg:4.8,comment:'BANG of the year'},{date:'Mar 14',game:'DEN@LAL',myR:5,commAvg:4.8,comment:''}]
-};
-function getHist(id){return HIST[id]||[];}
-function fullHist(id){
-  var base=getHist(id).slice();
-  var live=ratingHistory[id]||[];
-  live.forEach(function(l){
-    var i=base.findIndex(function(m){return m.game===l.game;});
-    if(i>=0) base[i]=l; else base.push(l);
+// ── RATING HISTORY (local for now) ──
+var HIST = {};
+function getHist(id) { return HIST[id] || []; }
+function fullHist(id) {
+  var base = getHist(id).slice();
+  var live = ratingHistory[id] || [];
+  live.forEach(function(l) {
+    var i = base.findIndex(function(m) { return m.game === l.game; });
+    if (i >= 0) base[i] = l; else base.push(l);
   });
   return base;
 }
 
 // ── STATE ──
 var loggedIn=false,ratings={},comments={},ratingHistory={};
-var activeLeague='ALL',activeDay=WEEK[0].day,activeGame=null;
+var activeLeague='ALL',activeDay=todayET(),activeGame=null;
 var prevScreen='games',dEntityId=null,dTab='rate';
 var entityProfileId=null,entityProfileType=null;
 var mpTab='history',profileFilter='all';
@@ -588,6 +670,11 @@ function showScr(id){
 // ── GAMES SCREEN ──
 function showGamesScreen(){
   showScr('games');
+  if (!dataLoaded) {
+    document.getElementById('scr-games').innerHTML='<div class="hdr"><div class="hdr-main"><div class="logo">Box<b>Scored</b></div></div></div><div style="padding:60px 16px;text-align:center;color:var(--text3)"><div style="font-size:14px;margin-bottom:8px">Loading games…</div></div>';
+    loadGames(function() { showGamesScreen(); });
+    return;
+  }
   var signInBtn=loggedIn
     ? '<div style="width:30px;height:30px;border-radius:50%;background:var(--goldl);border:1px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--gold);cursor:pointer" onclick="navTo(\'profile\')">ME</div>'
     : '<button class="hbtn" onclick="doLogin()">Sign in</button>';
@@ -618,44 +705,85 @@ function setLeague(l){activeLeague=l;renderGamesList();}
 function renderDayNav(){
   var el=document.getElementById('dayNav');
   if(!el) return;
-  el.innerHTML=WEEK.map(function(w){
-    var label=w.day.replace(/\d{4}/,'').replace(/\s+/g,' ').trim();
-    return '<button class="day-pill'+(w.day===activeDay?' on':'')+'" onclick="setDay(\''+w.day+'\')">'+label+'</button>';
+  var dates=getDatesWithGames();
+  if(!dates.length){el.innerHTML='';return;}
+  // make sure activeDay is in the list
+  if(dates.indexOf(activeDay)<0) activeDay=dates[0];
+  el.innerHTML=dates.map(function(d){
+    var label=formatDateLabel(d);
+    return '<button class="day-pill'+(d===activeDay?' on':'')+'" onclick="setDay(\''+d+'\')">'+label+'</button>';
   }).join('');
 }
 function setDay(d){activeDay=d;renderDayNav();renderGamesList();}
 function gameCardHTML(g){
-  var w=g.homeScore>g.awayScore?g.home:g.away;
-  var awColor=w===g.away?'var(--text)':'var(--text3)';
-  var hwColor=w===g.home?'var(--text)':'var(--text3)';
-  var ratedIds=Object.keys(ratings);
-  var rated=ratedIds.some(function(id){return id.indexOf(g.id)>=0;});
-  var footerRight=rated?'<span class="rated-chip">Rated</span>':'<span style="font-size:10px;color:var(--text3)">'+(loggedIn?'Tap to rate':'Tap to view')+'</span>';
-  return '<div class="game-card" onclick="openGame(\''+g.id+'\')">'+
+  var isFinal = g.status === 'final';
+  var isLive  = g.status === 'live';
+  var isSched = g.status === 'scheduled';
+
+  // Winner highlighting only for final games
+  var w = isFinal ? (g.homeScore > g.awayScore ? g.home : g.away) : null;
+  var awColor = w===g.away ? 'var(--text)' : (isFinal ? 'var(--text3)' : 'var(--text)');
+  var hwColor = w===g.home ? 'var(--text)' : (isFinal ? 'var(--text3)' : 'var(--text)');
+
+  // Score block differs by state
+  var scoreBlock;
+  if (isFinal) {
+    scoreBlock =
+      '<div class="gc-score">'+g.awayScore+'<span class="sep">–</span>'+g.homeScore+'</div>'+
+      '<div class="gc-status">Final</div>';
+  } else if (isLive) {
+    var period = g.period || 'Live';
+    var clock  = g.clock  ? ' · '+g.clock : '';
+    scoreBlock =
+      '<div class="gc-score" style="color:var(--red)">'+g.awayScore+'<span class="sep" style="color:var(--text3)">–</span>'+g.homeScore+'</div>'+
+      '<div class="gc-status" style="color:var(--red);display:flex;align-items:center;justify-content:center;gap:4px">'+
+        '<span style="width:6px;height:6px;border-radius:50%;background:var(--red);display:inline-block;animation:pulse 1.4s infinite"></span>'+
+        period+clock+
+      '</div>';
+  } else {
+    scoreBlock =
+      '<div style="font-size:16px;font-weight:600;color:var(--text2)">'+g.time+'</div>'+
+      '<div class="gc-status">Scheduled</div>';
+  }
+
+  var ratedIds = Object.keys(ratings);
+  var rated = ratedIds.some(function(id){ return id.indexOf(g.id) >= 0; });
+  var footerRight;
+  if (isFinal) {
+    footerRight = rated
+      ? '<span class="rated-chip">Rated</span>'
+      : '<span style="font-size:10px;color:var(--gold)">'+(loggedIn?'Tap to rate ★':'Tap to view')+'</span>';
+  } else if (isLive) {
+    footerRight = '<span style="font-size:10px;color:var(--red);font-weight:500">In progress</span>';
+  } else {
+    footerRight = '<span style="font-size:10px;color:var(--text3)">'+g.venue+'</span>';
+  }
+
+  var borderStyle = isLive ? 'border-color:rgba(255,71,87,0.4)' : '';
+
+  return '<div class="game-card" style="'+borderStyle+'" onclick="openGame(\''+g.id+'\')">'+
     '<div class="gc-row">'+
       '<div class="gc-team">'+
         '<div class="team-logo-wrap">'+teamLogoHTML(g.away,32)+'</div>'+
         '<div class="gc-name" style="color:'+awColor+'">'+g.away+'</div>'+
+        (g.awayRecord ? '<div style="font-size:10px;color:var(--text3);margin-left:2px">'+g.awayRecord+'</div>' : '')+
       '</div>'+
-      '<div class="gc-score-block">'+
-        '<div class="gc-score">'+g.awayScore+'<span class="sep">–</span>'+g.homeScore+'</div>'+
-        '<div class="gc-status">Final</div>'+
-      '</div>'+
+      '<div class="gc-score-block">'+scoreBlock+'</div>'+
       '<div class="gc-team r">'+
         '<div class="team-logo-wrap">'+teamLogoHTML(g.home,32)+'</div>'+
         '<div class="gc-name" style="color:'+hwColor+'">'+g.home+'</div>'+
+        (g.homeRecord ? '<div style="font-size:10px;color:var(--text3);margin-left:2px">'+g.homeRecord+'</div>' : '')+
       '</div>'+
     '</div>'+
-    '<div class="gc-footer"><span>'+g.time+' ET</span>'+footerRight+'</div>'+
+    '<div class="gc-footer"><span style="font-size:11px;color:var(--text3)">'+g.league+(isSched?' · '+g.time+' ET':'')+'</span>'+footerRight+'</div>'+
   '</div>';
 }
 function renderGamesList(){
   var el=document.getElementById('gamesList');
   if(!el) return;
-  var dayData=WEEK.find(function(w){return w.day===activeDay;});
-  if(!dayData){el.innerHTML='<div style="padding:40px 16px;text-align:center;color:var(--text3)">No games</div>';return;}
-  var games=activeLeague==='ALL'?dayData.games:dayData.games.filter(function(g){return g.league===activeLeague;});
-  if(!games.length){el.innerHTML='<div style="padding:40px 16px;text-align:center;color:var(--text3)">No '+(activeLeague==='ALL'?'':activeLeague+' ')+'games on '+activeDay+'</div>';return;}
+  var allDayGames=getGamesForDate(activeDay);
+  var games=activeLeague==='ALL'?allDayGames:allDayGames.filter(function(g){return g.league===activeLeague;});
+  if(!games.length){el.innerHTML='<div style="padding:40px 16px;text-align:center;color:var(--text3)">No '+(activeLeague==='ALL'?'':activeLeague+' ')+'games on '+formatDateLabel(activeDay)+'</div>';return;}
 
   // Group by league when ALL is selected
   var html='';
@@ -665,7 +793,7 @@ function renderGamesList(){
     games.forEach(function(g){if(!grouped[g.league])grouped[g.league]=[];grouped[g.league].push(g);});
     leagueOrder.forEach(function(lg){
       if(!grouped[lg]||!grouped[lg].length) return;
-      html+='<div style="padding:10px 16px 4px;font-family:\'Barlow Condensed\',sans-serif;font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.1em;text-transform:uppercase">'+lg+'</div>';
+      html+='<div style="padding:10px 16px 4px;font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.1em;text-transform:uppercase">'+lg+'</div>';
       html+='<div class="games-list" style="margin-bottom:4px">';
       grouped[lg].forEach(function(g){ html+=gameCardHTML(g); });
       html+='</div>';
@@ -682,6 +810,7 @@ function renderGamesList(){
 function openGame(id){
   activeGame=id;prevScreen='games';
   var g=getGame(id);
+  if(!g){console.warn('Game not found:',id);return;}
   var awName=TEAM_NAMES[g.away]||g.away;
   var hwName=TEAM_NAMES[g.home]||g.home;
   document.getElementById('scr-detail').innerHTML=
@@ -711,12 +840,30 @@ function switchDetTab(key,el){
   renderDetTab(key);
 }
 function renderDetTab(key){
-  var g=getGame(activeGame),d=getDetail(activeGame);
+  var g=getGame(activeGame);
   var el=document.getElementById('detBody');
-  if(key==='teams') el.innerHTML='<div class="tab-body">'+renderTeamsTab(g,d)+'</div>';
-  else if(key==='home') el.innerHTML='<div class="tab-body">'+renderPlayersTab(g,d,'home')+'</div>';
-  else if(key==='away') el.innerHTML='<div class="tab-body">'+renderPlayersTab(g,d,'away')+'</div>';
-  else el.innerHTML='<div class="tab-body">'+renderOtherTab(g,d)+'</div>';
+  if(!g){el.innerHTML='<div class="tab-body"><p style="color:var(--text3)">Game not found.</p></div>';return;}
+
+  if(key==='teams'){
+    // teams tab does not need box score data
+    var d=getDetail(activeGame)||{teamStats:{},homeCoach:'Head Coach',awayCoach:'Head Coach',homePlayers:[],awayPlayers:[],announcers:[],refs:[]};
+    el.innerHTML='<div class="tab-body">'+renderTeamsTab(g,d)+'</div>';
+  } else if(key==='other'){
+    var d2=getDetail(activeGame)||{announcers:[{name:'Broadcaster',role:'Play-by-play'}],refs:[{name:'Official',role:'Crew chief'}]};
+    el.innerHTML='<div class="tab-body">'+renderOtherTab(g,d2)+'</div>';
+  } else {
+    // player tabs — load from DB
+    el.innerHTML='<div class="tab-body" style="text-align:center;padding:40px 0;color:var(--text3)">Loading box score…</div>';
+    if(g.status==='scheduled'){
+      el.innerHTML='<div class="tab-body"><div style="text-align:center;padding:40px 16px;color:var(--text3)"><div style="font-size:14px;margin-bottom:6px">Game has not started yet</div><div style="font-size:12px">Box score will appear here once the game begins</div></div></div>';
+      return;
+    }
+    loadDetailAsync(activeGame, function(d){
+      if(!d){el.innerHTML='<div class="tab-body"><p style="color:var(--text3)">Box score not available yet.</p></div>';return;}
+      var side=key==='home'?'home':'away';
+      el.innerHTML='<div class="tab-body">'+renderPlayersTab(g,d,side)+'</div>';
+    });
+  }
 }
 function hi(a,b,h){if(h===false) return a<b?'w':'lo'; return a>b?'w':'lo';}
 function renderTeamsTab(g,d){
@@ -1019,7 +1166,7 @@ function renderSearchResults(){
     leagueResults.forEach(function(k){
       html+=
         '<div class="search-result" onclick="setLeagueAndGo(\''+k+'\')">'+
-          '<div style="width:36px;height:36px;border-radius:8px;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-family:\'Barlow Condensed\',sans-serif;font-size:13px;font-weight:700;color:var(--gold)">'+k+'</div>'+
+          '<div style="width:36px;height:36px;border-radius:8px;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--gold)">'+k+'</div>'+
           '<div style="flex:1"><div class="sr-name">'+k+'</div><div class="sr-sub">'+ALL_LEAGUES[k]+'</div></div>'+
           '<svg class="sr-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>'+
         '</div>';
