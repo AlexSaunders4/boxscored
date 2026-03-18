@@ -157,53 +157,67 @@ async function fetchBoxScore(espnGame, leagueConfig) {
 }
 
 // ── BASKETBALL BOX SCORE ──
+// Helper: safely parse int, always returns integer never null
+function safeInt(val) { const n = parseInt(val); return isNaN(n) ? 0 : n; }
+function safeStr(val) { return val != null ? String(val) : ''; }
+function safeSplit(str, sep, idx) {
+  if (!str) return 0;
+  const parts = str.split(sep);
+  return safeInt(parts[idx]);
+}
+
 async function parseBasketball(espnGameId, boxscores) {
   const rows = [];
   for (const team of boxscores) {
-    const teamAbbr = team.team?.abbreviation || '';
+    const teamAbbr = safeStr(team.team?.abbreviation);
     const statsLabels = team.statistics?.[0]?.labels || [];
     const athletes = team.statistics?.[0]?.athletes || [];
 
     for (const athlete of athletes) {
-      const stats = athlete.stats || [];
+      // Skip DNP players who have empty stats arrays
+      if (!athlete.stats || athlete.stats.length === 0) continue;
+      const stats = athlete.stats;
       const get = (label) => {
         const idx = statsLabels.indexOf(label);
-        return idx >= 0 ? stats[idx] : null;
+        return (idx >= 0 && stats[idx] != null) ? stats[idx] : '';
       };
-      const fgStr  = get('FG')  || '0-0';
-      const tpStr  = get('3PT') || '0-0';
-      const ftStr  = get('FT')  || '0-0';
-      const [fgMade, fgAtt] = fgStr.split('-').map(Number);
-      const [tpMade, tpAtt] = tpStr.split('-').map(Number);
-      const [ftMade, ftAtt] = ftStr.split('-').map(Number);
+      const fgStr = get('FG') || '0-0';
+      const tpStr = get('3PT') || '0-0';
+      const ftStr = get('FT') || '0-0';
 
+      // Every field must be non-null and same type across all rows
       rows.push({
-        espn_game_id: espnGameId,
-        player_name:  athlete.athlete?.displayName || 'Unknown',
+        espn_game_id: safeStr(espnGameId),
+        player_name:  safeStr(athlete.athlete?.displayName) || 'Unknown',
         team_abbr:    teamAbbr,
-        position:     athlete.athlete?.position?.abbreviation || null,
-        starter:      athlete.starter || false,
-        min:          get('MIN'),
-        pts:          parseInt(get('PTS')) || 0,
-        reb:          parseInt(get('REB')) || 0,
-        ast:          parseInt(get('AST')) || 0,
-        stl:          parseInt(get('STL')) || 0,
-        blk:          parseInt(get('BLK')) || 0,
-        to_val:       parseInt(get('TO'))  || 0,
-        oreb:         parseInt(get('OREB')) || 0,
-        dreb:         parseInt(get('DREB')) || 0,
-        pf:           parseInt(get('PF'))  || 0,
-        pm:           parseInt(get('+/-')) || 0,
-        fg_made: fgMade || 0, fg_att: fgAtt || 0,
-        tp_made: tpMade || 0, tp_att: tpAtt || 0,
-        ft_made: ftMade || 0, ft_att: ftAtt || 0,
+        position:     safeStr(athlete.athlete?.position?.abbreviation),
+        starter:      athlete.starter === true,
+        min:          safeStr(get('MIN')),
+        pts:          safeInt(get('PTS')),
+        reb:          safeInt(get('REB')),
+        ast:          safeInt(get('AST')),
+        stl:          safeInt(get('STL')),
+        blk:          safeInt(get('BLK')),
+        to_val:       safeInt(get('TO')),
+        oreb:         safeInt(get('OREB')),
+        dreb:         safeInt(get('DREB')),
+        pf:           safeInt(get('PF')),
+        pm:           safeInt(get('+/-')),
+        fg_made:      safeSplit(fgStr, '-', 0),
+        fg_att:       safeSplit(fgStr, '-', 1),
+        tp_made:      safeSplit(tpStr, '-', 0),
+        tp_att:       safeSplit(tpStr, '-', 1),
+        ft_made:      safeSplit(ftStr, '-', 0),
+        ft_att:       safeSplit(ftStr, '-', 1),
       });
     }
   }
   if (rows.length) {
-    // Delete old rows for this game first, then insert fresh
-    await supabase('DELETE', 'box_basketball', null, `?espn_game_id=eq.${espnGameId}`);
-    await supabase('POST', 'box_basketball', rows);
+    await supabase('DELETE', 'box_basketball', null, '?espn_game_id=eq.' + espnGameId);
+    // Insert in batches of 25 to avoid request size limits
+    for (let i = 0; i < rows.length; i += 25) {
+      await supabase('POST', 'box_basketball', rows.slice(i, i + 25));
+    }
   }
 }
 
