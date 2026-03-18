@@ -27,13 +27,13 @@ async function supabase(method, table, body, params = '') {
       apikey: SUPABASE_KEY,
       Authorization: `Bearer ${SUPABASE_KEY}`,
       'Content-Type': 'application/json',
-      Prefer: method === 'POST' ? 'resolution=merge-duplicates' : '',
+      Prefer: method === 'POST' ? 'return=minimal,resolution=merge-duplicates' : method === 'DELETE' ? 'return=minimal' : '',
     },
     body: body ? JSON.stringify(body) : undefined,
   });
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`Supabase ${method} ${table}: ${err}`);
+    throw new Error(`Supabase ${method} ${table}${params}: ${err}`);
   }
   const text = await res.text();
   return text ? JSON.parse(text) : null;
@@ -507,13 +507,16 @@ export default async function handler(req, res) {
       // Fetch box scores for all final/live games
       const activeGames = allGames.filter(g => g.status === 'live' || g.status === 'final');
       console.log(`${leagueConfig.league}: ${activeGames.length} active games need box scores`);
+      results.updated.push(`${leagueConfig.league} active: ${activeGames.length} games needing box scores`);
 
       for (const game of activeGames) {
         try {
           await fetchBoxScore(game, leagueConfig);
           results.boxScores++;
         } catch (e) {
-          console.warn(`Box score failed for ${game.espn_id}: ${e.message}`);
+          const msg = `Box score failed ${game.espn_id}: ${e.message}`;
+          console.warn(msg);
+          results.errors.push(msg);
         }
       }
 
